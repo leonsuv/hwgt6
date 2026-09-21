@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "app_name",
+      "value": "Opel Watch"
+    },
+    {
+      "name": "app_desc",
+      "value": "Fahrzeugdaten aus Opel Connect auf der Uhr"
+    },
+    {
+      "name": "entry_MainAbility",
+      "value": "Opel Watch"
+    }
+  ]
+}

@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opel Watch Vorschau</title>
+<style>
+  :root {
+    --bg: #14161a;
+    --panel: #1d2026;
+    --line: #2c3038;
+    --text: #e9eaee;
+    --dim: #9aa0aa;
+    --accent: #f5a623;
+  }
+  * { box-sizing: border-box; }
+  /* display:flex wuerde das hidden-Attribut aushebeln */
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; padding: 24px; background: var(--bg); color: var(--text);
+    font-family: system-ui, "Segoe UI", sans-serif;
+    display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; letter-spacing: .02em; }
+  .sub { color: var(--dim); font-size: 13px; margin: 0 0 16px; }
+
+  /* ---- Uhr: 466 x 466 px, exakt wie auf der GT6 ---- */
+  .bezel {
+    width: 506px; height: 506px; border-radius: 50%;
+    background: linear-gradient(160deg, #3a3d44, #101216 60%);
+    padding: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.6);
+    flex: 0 0 auto;
+  }
+  .screen {
+    width: 466px; height: 466px; border-radius: 50%; background: #000;
+    position: relative; overflow: hidden; user-select: none;
+  }
+  .card { position: absolute; inset: 0; display: none; }
+  .card.on { display: block; }
+
+  .ring { position: absolute; inset: 0; }
+  .center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+  }
+  .vehicle { font-size: 28px; color: #9a9a9a; margin-bottom: 4px; }
+  .level-row { display: flex; align-items: flex-end; height: 118px; }
+  .level { font-size: 118px; line-height: 1; letter-spacing: -2px; }
+  .percent { font-size: 40px; margin: 0 0 18px 4px; }
+  .range { font-size: 40px; }
+  .status { font-size: 26px; margin-top: 8px; }
+  .secondary { font-size: 24px; color: #9a9a9a; margin-top: 4px; }
+  .age { font-size: 22px; color: #6e6e6e; margin-top: 10px; }
+  .age.stale { color: #ff9f43; }
+
+  .list {
+    position: absolute; inset: 0; padding: 0 62px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+  }
+  .headline { font-size: 30px; color: var(--accent); margin-bottom: 14px; }
+  .row {
+    width: 342px; height: 52px; display: flex; justify-content: space-between;
+    align-items: center; border-bottom: 1px solid #1f1f1f;
+  }
+  .row .l { font-size: 24px; color: #8c8c8c; }
+  .row .v { font-size: 24px; }
+  .v.ok { color: #3ddc84; } .v.warn { color: #ff5252; }
+  .hint { font-size: 20px; color: #4d4d4d; margin-top: 12px; }
+  .alert { font-size: 22px; color: #ff9f43; margin-top: 10px; }
+  .source { font-size: 20px; color: #4d4d4d; margin-top: 14px; }
+
+  .btn {
+    width: 330px; height: 62px; border-radius: 31px; background: #1c1c1c;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 26px; margin-top: 12px; cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); color: #101010; }
+
+  .banner {
+    position: absolute; top: 40px; left: 75px; width: 316px; height: 46px;
+    background: #2a1414; border-radius: 23px;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 22px; color: #ff5252;
+  }
+  .toast {
+    position: absolute; top: 340px; left: 43px; width: 380px; height: 70px;
+    border-radius: 35px; background: #1f1f1f; display: flex;
+    justify-content: center; align-items: center; font-size: 24px;
+  }
+  .dots {
+    position: absolute; bottom: 14px; left: 0; width: 466px;
+    display: flex; gap: 8px; justify-content: center;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #3a3a3a; }
+  .dot.on { background: var(--accent); }
+
+  /* ---- Bedienfeld ---- */
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px; width: 340px; font-size: 14px;
+  }
+  .panel h2 { font-size: 14px; margin: 18px 0 8px; color: var(--dim); font-weight: 600;
+              text-transform: uppercase; letter-spacing: .06em; }
+  .panel h2:first-child { margin-top: 0; }
+  label { display: flex; justify-content: space-between; align-items: center;
+          gap: 10px; margin: 8px 0; }
+  input[type=text], input[type=number], select {
+    background: #0f1115; color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 8px; font: inherit; width: 190px;
+  }
+  button {
+    background: var(--accent); color: #101010; border: 0; border-radius: 8px;
+    padding: 8px 12px; font: inherit; font-weight: 600; cursor: pointer; margin: 4px 4px 0 0;
+  }
+  button.ghost { background: #2a2e36; color: var(--text); }
+  .log {
+    margin-top: 12px; background: #0f1115; border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px; font-family: ui-monospace, Consolas, monospace;
+    font-size: 12px; max-height: 190px; overflow: auto; white-space: pre-wrap; color: var(--dim);
+  }
+  .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #2a2e36; }
+  .pill.ok { background: #14462c; color: #7ff0b3; }
+  .pill.bad { background: #4a1d1d; color: #ff9d9d; }
+</style>
+</head>
+<body>
+
+<div class="bezel">
+  <div class="screen" id="screen">
+
+    <!-- Karte 1 -->
+    <div class="card on" data-card="0">
+      <svg class="ring" viewBox="0 0 466 466">
+        <path id="track" fill="none" stroke="#262626" stroke-width="20" stroke-linecap="round"></path>
+        <path id="value" fill="none" stroke="#f5a623" stroke-width="20" stroke-linecap="round"></path>
+      </svg>
+      <div class="center">
+        <div class="vehicle" id="vehicle">Opel</div>
+        <div class="level-row">
+          <div class="level" id="level">--</div>
+          <div class="percent" id="pct">%</div>
+        </div>
+        <div class="range" id="range">--</div>
+        <div class="status" id="status">Keine Daten</div>
+        <div class="secondary" id="secondary" hidden></div>
+        <div class="age" id="age">--</div>
+      </div>
+    </div>
+
+    <!-- Karte 2 -->
+    <div class="card" data-card="1">
+      <div class="list">
+        <div class="headline">Status</div>
+        <div class="row"><span class="l">Verriegelung</span><span class="v" id="lock">--</span></div>
+        <div class="row"><span class="l">Tueren</span><span class="v" id="doors">--</span></div>
+        <div class="row"><span class="l">Klima</span><span class="v" id="climate">--</span></div>
+        <div class="row"><span class="l">Innen / Aussen</span><span class="v" id="temps">--</span></div>
+        <div class="row"><span class="l">Kilometer</span><span class="v" id="odo">--</span></div>
+        <div class="alert" id="alert" hidden></div>
+        <div class="hint">tippen fuer Details</div>
+      </div>
+    </div>
+
+    <!-- Karte 3 -->
+    <div class="card" data-card="2">
+      <div class="list">
+        <div class="headline">Aktionen</div>
+        <div class="btn primary" onclick="app.refresh(true)">Jetzt aktualisieren</div>
+        <div class="btn" id="climateBtn" onclick="app.precondition()">Vorklimatisierung</div>
+        <div class="btn" onclick="app.command('wakeup')">Fahrzeug wecken</div>
+        <div class="btn" onclick="app.go(0)">Einstellungen</div>
+        <div class="source" id="source"></div>
+      </div>
+    </div>
+
+    <div class="banner" id="banner" hidden></div>
+    <div class="toast" id="toast" hidden></div>
+    <div class="dots" id="dots"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h1>Watch-GT6-Vorschau <span class="pill" id="conn">bereit</span></h1>
+  <p class="sub">Gleiche Formatierlogik wie die Uhr (common/util.js), gleiche Groessen in px.</p>
+
+  <h2>Bridge</h2>
+  <label>Basis-URL <input type="text" id="base" value=""></label>
+  <label>Token <input type="text" id="token" value=""></label>
+  <label>Intervall (s) <input type="number" id="interval" value="15" min="5" max="600"></label>
+  <button onclick="app.refresh(false)">Laden</button>
+  <button class="ghost" onclick="app.toggleAuto()" id="autoBtn">Auto: an</button>
+
+  <h2>Karte</h2>
+  <button class="ghost" onclick="app.go(-1)">&larr;</button>
+  <button class="ghost" onclick="app.go(1)">&rarr;</button>
+
+  <h2>Zustaende testen</h2>
+  <button class="ghost" onclick="app.simulate('low')">Akku 8 %</button>
+  <button class="ghost" onclick="app.simulate('charge')">Laden 7,4 kW</button>
+  <button class="ghost" onclick="app.simulate('psa')">Laden km/h (PSA)</button>
+  <button class="ghost" onclick="app.simulate('unlocked')">Tuer offen</button>
+  <button class="ghost" onclick="app.simulate('stale')">veraltet</button>
+  <button class="ghost" onclick="app.simulate('offline')">offline</button>
+  <button class="ghost" onclick="app.simulate('hybrid')">Hybrid</button>
+  <button class="ghost" onclick="app.simulate('reset')">zurueck</button>
+
+  <div class="log" id="log"></div>
+</div>
+
+<script src="/preview/util.js"></script>
+<script>
+/* --------------------------------------------------------------- Helfer */
+var params = new URLSearchParams(location.search);
+var el = function (id) { return document.getElementById(id); };
+el('base').value = params.get('base') || location.origin;
+el('token').value = params.get('t') || '';
+
+function log(text) {
+  var box = el('log');
+  box.textContent = new Date().toLocaleTimeString() + '  ' + text + '\n' + box.textContent;
+}
+
+/* Bogen wie das Arc-Progress der Uhr: Start 210 Grad, Spannweite 300 Grad */
+function arcPath(cx, cy, r, startDeg, sweepDeg) {
+  if (sweepDeg <= 0) { return ''; }
+  if (sweepDeg >= 359.999) { sweepDeg = 359.999; }
+  var p = function (deg) {
+    var rad = (deg - 0) * Math.PI / 180;
+    return [cx + r * Math.sin(rad), cy - r * Math.cos(rad)];
+  };
+  var a = p(startDeg), b = p(startDeg + sweepDeg);
+  var large = sweepDeg > 180 ? 1 : 0;
+  return 'M ' + a[0] + ' ' + a[1] + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + b[0] + ' ' + b[1];
+}
+
+/* ------------------------------------------------------------ Anwendung */
+var app = {
+  card: 0,
+  auto: true,
+  timer: 0,
+  raw: null,
+  override: null,
+
+  init: function () {
+    el('track').setAttribute('d', arcPath(233, 233, 203, 210, 300));
+    this.renderDots();
+    el('screen').addEventListener('click', function (e) {
+      if (e.target.closest('.btn')) { return; }
+      app.go(1);
+    });
+    this.refresh(false);
+    this.restartTimer();
+  },
+
+  restartTimer: function () {
+    clearInterval(this.timer);
+    if (!this.auto) { return; }
+    var seconds = Math.max(5, parseInt(el('interval').value, 10) || 15);
+    this.timer = setInterval(function () { app.refresh(false); }, seconds * 1000);
+  },
+
+  toggleAuto: function () {
+    this.auto = !this.auto;
+    el('autoBtn').textContent = 'Auto: ' + (this.auto ? 'an' : 'aus');
+    this.restartTimer();
+  },
+
+  url: function (path, extra) {
+    var base = el('base').value.replace(/\/$/, '');
+    return base + path + '?t=' + encodeURIComponent(el('token').value) + (extra || '');
+  },
+
+  refresh: function (force) {
+    var self = this;
+    fetch(this.url('/api/v1/watch', force ? '&force=1' : ''))
+      .then(function (r) {
+        if (r.status === 401) { throw new Error('Token abgelehnt (401)'); }
+        if (!r.ok) { throw new Error('HTTP ' + r.status); }
+        return r.json();
+      })
+      .then(function (data) {
+        self.raw = data;
+        self.override = null;
+        el('conn').textContent = 'verbunden';
+        el('conn').className = 'pill ok';
+        log('Daten: ' + data.lvl + ' % / ' + data.rng + ' km' + (data.chg ? ' (laedt)' : ''));
+        self.render(data, '');
+      })
+      .catch(function (err) {
+        el('conn').textContent = 'offline';
+        el('conn').className = 'pill bad';
+        log('Fehler: ' + err.message);
+        self.render(self.raw, err.message);
+      });
+  },
+
+  command: function (name, params) {
+    var extra = '';
+    for (var k in (params || {})) { extra += '&' + k + '=' + encodeURIComponent(params[k]); }
+    fetch(this.url('/api/v1/command/' + name, extra), { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (body) {
+        app.toast(body.message || body.error || 'ok');
+        log('Befehl ' + name + ': ' + (body.message || body.error));
+        app.refresh(true);
+      })
+      .catch(function (err) { app.toast('Fehler'); log('Befehl ' + name + ': ' + err.message); });
+  },
+
+  precondition: function () {
+    var on = this.raw && this.raw.clm === 1;
+    this.command('preconditioning', { activate: on ? 0 : 1, minutes: 10 });
+  },
+
+  /* Testzustaende, ohne die Bridge zu veraendern */
+  simulate: function (mode) {
+    var data = JSON.parse(JSON.stringify(this.raw || { v: 1, nm: 'Corsa-e', et: 'electric', age: 60 }));
+    if (mode === 'reset') { this.override = null; this.refresh(false); return; }
+    if (mode === 'low') { data.lvl = 8; data.rng = 27; data.chg = 0; data.plg = 0; }
+    if (mode === 'charge') { data.chg = 1; data.plg = 1; data.kw = 7.4; data.eta = 95; data.tgt = 80; }
+    if (mode === 'psa') {
+      /* So antwortet die echte Opel-Schnittstelle: keine kW, dafuer km/h. */
+      data.chg = 1; data.plg = 1; data.kw = null; data.kmh = 38; data.eta = 85; data.tgt = 80;
+    }
+    if (mode === 'unlocked') { data.lck = 0; data.opn = 2; data.opl = ['fl', 'trunk']; }
+    if (mode === 'stale') { data.age = 7200; }
+    if (mode === 'offline') { this.override = data; this.render(data, 'Kein Kontakt zur Bridge'); return; }
+    if (mode === 'hybrid') { data.et = 'hybrid'; data.lvl2 = 62; data.rng2 = 430; }
+    this.override = data;
+    this.render(data, '');
+  },
+
+  render: function (data, warning) {
+    var view = window.UTIL.buildView(data, { metric: true, lowLevel: 20, staleMin: 30, error: warning });
+
+    el('value').setAttribute('d', arcPath(233, 233, 203, 210, 300 * view.ring / 100));
+    el('value').setAttribute('stroke', view.ringColor);
+    el('vehicle').textContent = view.name;
+    el('level').textContent = view.levelText;
+    el('level').style.color = view.accent;
+    el('pct').style.color = view.accent;
+    el('range').textContent = view.rangeText;
+    el('status').textContent = (view.statusIcon ? view.statusIcon + ' ' : '') + view.statusLine;
+    el('status').style.color = view.accent;
+    el('secondary').hidden = !view.hasSecondary;
+    el('secondary').textContent = view.secondaryText;
+    el('age').textContent = view.ageText;
+    el('age').className = 'age' + (view.stale ? ' stale' : '');
+
+    el('lock').textContent = view.lockText;
+    el('lock').className = 'v ' + (view.lockOk ? 'ok' : (view.ready ? 'warn' : ''));
+    el('doors').textContent = view.doorsText;
+    el('doors').className = 'v ' + (view.doorsOpen ? 'warn' : '');
+    el('climate').textContent = view.climateText;
+    el('temps').textContent = view.tempInText + '  /  ' + view.tempOutText;
+    el('odo').textContent = view.odoText;
+    el('alert').hidden = !view.hasAlerts;
+    el('alert').textContent = view.alerts[0] || '';
+    el('source').textContent = view.source ? 'Quelle: ' + view.source : '';
+    el('climateBtn').textContent = view.climateOn ? 'Klima stoppen' : 'Vorklimatisierung';
+
+    el('banner').hidden = !warning;
+    el('banner').textContent = warning || '';
+  },
+
+  go: function (delta) {
+    var count = document.querySelectorAll('.card').length;
+    this.card = delta === 0 ? 0 : (this.card + delta + count) % count;
+    document.querySelectorAll('.card').forEach(function (node, index) {
+      node.classList.toggle('on', index === app.card);
+    });
+    this.renderDots();
+  },
+
+  renderDots: function () {
+    var count = document.querySelectorAll('.card').length;
+    var html = '';
+    for (var i = 0; i < count; i++) {
+      html += '<div class="dot' + (i === this.card ? ' on' : '') + '"></div>';
+    }
+    el('dots').innerHTML = html;
+  },
+
+  toast: function (text) {
+    el('toast').hidden = false;
+    el('toast').textContent = text;
+    clearTimeout(this._t);
+    this._t = setTimeout(function () { el('toast').hidden = true; }, 2500);
+  }
+};
+
+el('interval').addEventListener('change', function () { app.restartTimer(); });
+app.init();
+</script>
+</body>
+</html>

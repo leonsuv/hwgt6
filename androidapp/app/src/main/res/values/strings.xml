@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Opel Bridge</string>
+    <string name="subtitle">Holt die Fahrzeugdaten und liefert sie an die Huawei Watch GT6.</string>
+
+    <string name="status_stopped">Brücke gestoppt</string>
+    <string name="section_account">Konto</string>
+    <string name="section_service">Dienst</string>
+    <string name="section_watch">Adresse für die Uhr</string>
+
+    <string name="not_logged_in">Nicht angemeldet</string>
+    <string name="country">Land</string>
+    <string name="login">Bei Opel anmelden</string>
+    <string name="logout">Abmelden und Daten löschen</string>
+
+    <string name="start_bridge">Brücke starten</string>
+    <string name="refresh_now">Jetzt aktualisieren</string>
+    <string name="copy_config">Für config.js kopieren</string>
+
+    <string name="watch_hint">Diese Adresse und das Token in watchapp/…/common/config.js eintragen. 127.0.0.1 funktioniert, weil die Uhr ihre Anfragen über dieses Telefon schickt. Klappt das nicht, die WLAN-Adresse nehmen.</string>
+
+    <string name="login_hint">Mit den Zugangsdaten der MyOpel-App anmelden (Land: %1$s). Danach schließt sich dieses Fenster von selbst.</string>
+    <string name="login_consent_hint">Die Zustimmungsseite von Opel hängt öfter. Wenn hier nichts mehr passiert: unten auf „Anmeldung abschließen“ tippen.</string>
+    <string name="login_exchanging">Code wird eingelöst …</string>
+    <string name="login_using_cookie">Sitzung wird verwendet …</string>
+    <string name="login_no_cookie">Keine Sitzung gefunden – bitte zuerst oben anmelden.</string>
+    <string name="login_failed">Fehlgeschlagen: %1$s</string>
+    <string name="finish_with_cookie">Anmeldung abschließen</string>
+    <string name="reset_login">Von vorn</string>
+</resources>

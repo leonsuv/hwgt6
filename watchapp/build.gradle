@@ -1,0 +1,31 @@
+// Wurzel-Buildskript fuer das HarmonyOS-Lite-Wearable-Projekt.
+// DevEco Studio passt Versionsnummern beim Import gegebenenfalls selbst an.
+
+apply plugin: 'com.huawei.ohos.app'
+
+ohos {
+    compileSdkVersion 6
+    defaultConfig {
+        compatibleSdkVersion 6
+    }
+}
+
+buildscript {
+    repositories {
+        maven { url 'https://repo.huaweicloud.com/repository/maven/' }
+        maven { url 'https://developer.huawei.com/repo/' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.huawei.ohos:hap:3.0.5.2'
+        classpath 'com.huawei.ohos:decctest:1.2.7.2'
+    }
+}
+
+allprojects {
+    repositories {
+        maven { url 'https://repo.huaweicloud.com/repository/maven/' }
+        maven { url 'https://developer.huawei.com/repo/' }
+        mavenCentral()
+    }
+}

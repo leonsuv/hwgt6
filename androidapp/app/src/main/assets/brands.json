@@ -1,0 +1,202 @@
+{
+ "oauth_url": "https://idpcvs.opel.com",
+ "realm": "clientsB2COpel",
+ "scheme": "mymopsdk",
+ "configs": {
+  "AT": {
+   "locale": "de-AT",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "BE": {
+   "locale": "fr-BE",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "BG": {
+   "locale": "bg-BG",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "CH": {
+   "locale": "fr-CH",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "CZ": {
+   "locale": "cs-CZ",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "DE": {
+   "locale": "de-DE",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "DK": {
+   "locale": "da-DK",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "EE": {
+   "locale": "et-EE",
+   "client_id": "a009239a-ed2a-49f9-9e6f-3f59703d469d",
+   "client_secret": "M5yW4sE5qU6pO6jO4vH2qE0qS6gH6lR6cJ6kW1pE5cM6nM7sS0"
+  },
+  "ES": {
+   "locale": "es-ES",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "FI": {
+   "locale": "fi-FI",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "FR": {
+   "locale": "fr-FR",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "GF": {
+   "locale": "fr-GF",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "GP": {
+   "locale": "fr-GP",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "GR": {
+   "locale": "el-GR",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "HR": {
+   "locale": "hr-HR",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "HU": {
+   "locale": "hu-HU",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "IE": {
+   "locale": "en-IE",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "IS": {
+   "locale": "en-IS",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "IT": {
+   "locale": "it-IT",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "JP": {
+   "locale": "ja-JP",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "LT": {
+   "locale": "lt-LT",
+   "client_id": "a009239a-ed2a-49f9-9e6f-3f59703d469d",
+   "client_secret": "M5yW4sE5qU6pO6jO4vH2qE0qS6gH6lR6cJ6kW1pE5cM6nM7sS0"
+  },
+  "LU": {
+   "locale": "fr-LU",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "LV": {
+   "locale": "lv-LV",
+   "client_id": "a009239a-ed2a-49f9-9e6f-3f59703d469d",
+   "client_secret": "M5yW4sE5qU6pO6jO4vH2qE0qS6gH6lR6cJ6kW1pE5cM6nM7sS0"
+  },
+  "MQ": {
+   "locale": "fr-MQ",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "MT": {
+   "locale": "en-MT",
+   "client_id": "a009239a-ed2a-49f9-9e6f-3f59703d469d",
+   "client_secret": "M5yW4sE5qU6pO6jO4vH2qE0qS6gH6lR6cJ6kW1pE5cM6nM7sS0"
+  },
+  "NL": {
+   "locale": "nl-NL",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "NO": {
+   "locale": "nb-NO",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "NZ": {
+   "locale": "en-NZ",
+   "client_id": "a009239a-ed2a-49f9-9e6f-3f59703d469d",
+   "client_secret": "M5yW4sE5qU6pO6jO4vH2qE0qS6gH6lR6cJ6kW1pE5cM6nM7sS0"
+  },
+  "PL": {
+   "locale": "pl-PL",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "PT": {
+   "locale": "pt-PT",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "RE": {
+   "locale": "fr-RE",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "RO": {
+   "locale": "ro-RO",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "RU": {
+   "locale": "ru-RU",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "SE": {
+   "locale": "sv-SE",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "SG": {
+   "locale": "en-SG",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "SI": {
+   "locale": "sl-SI",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "SK": {
+   "locale": "sk-SK",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "TR": {
+   "locale": "tr-TR",
+   "client_id": "07364655-93cb-4194-8158-6b035ac2c24c",
+   "client_secret": "F2kK7lC5kF5qN7tM0wT8kE3cW1dP0wC5pI6vC0sQ5iP5cN8cJ8"
+  },
+  "TW": {
+   "locale": "zh-TW",
+   "client_id": "a009239a-ed2a-49f9-9e6f-3f59703d469d",
+   "client_secret": "M5yW4sE5qU6pO6jO4vH2qE0qS6gH6lR6cJ6kW1pE5cM6nM7sS0"
+  }
+ }
+}

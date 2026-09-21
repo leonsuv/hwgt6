@@ -1,0 +1,57 @@
+<div class="page">
+  <list class="scroll">
+
+    <list-item class="item">
+      <text class="title">Einstellungen</text>
+    </list-item>
+
+    <list-item class="item">
+      <div class="row" onclick="cycleRefresh">
+        <text class="label">Intervall</text>
+        <text class="value">{{refreshText}}</text>
+      </div>
+    </list-item>
+
+    <list-item class="item">
+      <div class="row" onclick="toggleUnits">
+        <text class="label">Einheiten</text>
+        <text class="value">{{unitText}}</text>
+      </div>
+    </list-item>
+
+    <list-item class="item">
+      <div class="row" onclick="toggleHaptics">
+        <text class="label">Vibration</text>
+        <text class="value">{{hapticText}}</text>
+      </div>
+    </list-item>
+
+    <list-item class="item">
+      <div class="row">
+        <text class="label">Bridge</text>
+        <text class="value">{{hostText}}</text>
+      </div>
+    </list-item>
+
+    <list-item class="item">
+      <div class="btn" onclick="test">
+        <text class="btn-text">Verbindung testen</text>
+      </div>
+    </list-item>
+
+    <list-item class="item">
+      <text class="{{testClass}}">{{testText}}</text>
+    </list-item>
+
+    <list-item class="item">
+      <div class="btn" onclick="back">
+        <text class="btn-text">Zurueck</text>
+      </div>
+    </list-item>
+
+    <list-item class="item">
+      <text class="version">{{versionText}}</text>
+    </list-item>
+
+  </list>
+</div>

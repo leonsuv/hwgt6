@@ -1,0 +1,16 @@
+{
+  "strings": {
+    "app_name": "Opel Watch",
+    "refresh": "Jetzt aktualisieren",
+    "settings": "Einstellungen",
+    "status": "Status",
+    "actions": "Aktionen",
+    "back": "Zurueck",
+    "locked": "verriegelt",
+    "unlocked": "NICHT verriegelt",
+    "charging": "laedt",
+    "plugged": "Stecker verbunden",
+    "unplugged": "nicht verbunden",
+    "offline": "Keine Verbindung"
+  }
+}

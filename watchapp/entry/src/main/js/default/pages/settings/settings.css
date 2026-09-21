@@ -1,0 +1,89 @@
+.page {
+  width: 466px;
+  height: 466px;
+  background-color: #000000;
+  justify-content: center;
+  align-items: center;
+}
+
+.scroll {
+  width: 466px;
+  height: 466px;
+  flex-direction: column;
+}
+
+.item {
+  width: 466px;
+  height: 64px;
+  justify-content: center;
+  align-items: center;
+}
+
+.title {
+  font-size: 30px;
+  color: #f5a623;
+  text-align: center;
+}
+
+.row {
+  width: 340px;
+  height: 58px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom-width: 1px;
+  border-color: #1f1f1f;
+}
+
+.label {
+  font-size: 24px;
+  color: #8c8c8c;
+}
+
+.value {
+  font-size: 24px;
+  color: #ffffff;
+  text-align: right;
+}
+
+.btn {
+  width: 300px;
+  height: 56px;
+  background-color: #1c1c1c;
+  border-radius: 28px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-text {
+  font-size: 24px;
+  color: #ffffff;
+  text-align: center;
+}
+
+.result {
+  font-size: 22px;
+  color: #8c8c8c;
+  text-align: center;
+  width: 400px;
+}
+
+.result-ok {
+  font-size: 22px;
+  color: #3ddc84;
+  text-align: center;
+  width: 400px;
+}
+
+.result-bad {
+  font-size: 22px;
+  color: #ff5252;
+  text-align: center;
+  width: 400px;
+}
+
+.version {
+  font-size: 20px;
+  color: #4d4d4d;
+  text-align: center;
+}

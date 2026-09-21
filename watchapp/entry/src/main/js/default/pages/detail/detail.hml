@@ -1,0 +1,26 @@
+<div class="page">
+  <list class="scroll">
+
+    <list-item class="item">
+      <text class="title">{{name}}</text>
+    </list-item>
+
+    <list-item class="item" for="{{rows}}">
+      <div class="row">
+        <text class="label">{{$item.label}}</text>
+        <text class="value">{{$item.value}}</text>
+      </div>
+    </list-item>
+
+    <list-item class="item" if="{{hasAlerts}}">
+      <text class="alert">{{alertText}}</text>
+    </list-item>
+
+    <list-item class="item">
+      <div class="btn" onclick="back">
+        <text class="btn-text">Zurueck</text>
+      </div>
+    </list-item>
+
+  </list>
+</div>

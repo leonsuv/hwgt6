@@ -1,0 +1,45 @@
+{
+  "provider": "mock",
+  "host": "0.0.0.0",
+  "port": 8787,
+  "token": "",
+  "poll_interval_s": 300,
+  "cache_ttl_s": 120,
+  "vin": "",
+  "units": "metric",
+  "log_level": "info",
+  "allow_commands": false,
+  "tls_cert": "",
+  "tls_key": "",
+  "opelapi": {
+    "session_path": "",
+    "vin": "",
+    "command_timeout_s": 45
+  },
+  "psacc": {
+    "base_url": "http://127.0.0.1:5000",
+    "from_cache": true,
+    "timeout_s": 15,
+    "name": "",
+    "user": "",
+    "password": ""
+  },
+  "stellantis": {
+    "client_id": "",
+    "client_secret": "",
+    "refresh_token": "",
+    "realm": "clientsB2COpel",
+    "token_url": "https://idpcvs.opel.com/am/oauth2/access_token",
+    "api_base": "https://api.groupe-psa.com/connectedcar/v4/user",
+    "name": ""
+  },
+  "mock": {
+    "name": "Corsa-e",
+    "energy_type": "electric",
+    "level": 42,
+    "range_full_km": 337,
+    "odometer_km": 24310,
+    "charging": true,
+    "alert": false
+  }
+}

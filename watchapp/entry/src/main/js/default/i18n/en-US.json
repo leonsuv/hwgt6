@@ -1,0 +1,16 @@
+{
+  "strings": {
+    "app_name": "Opel Watch",
+    "refresh": "Refresh now",
+    "settings": "Settings",
+    "status": "Status",
+    "actions": "Actions",
+    "back": "Back",
+    "locked": "locked",
+    "unlocked": "NOT locked",
+    "charging": "charging",
+    "plugged": "plugged in",
+    "unplugged": "unplugged",
+    "offline": "No connection"
+  }
+}

@@ -1,0 +1,32 @@
+# Laufzeitdaten der Bridge - enthalten Token und Fahrzeugdaten!
+bridge/config.json
+bridge/state.json
+bridge/state.tmp
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# DevEco Studio / Gradle
+watchapp/.gradle/
+watchapp/build/
+watchapp/entry/build/
+watchapp/.idea/
+watchapp/local.properties
+*.hap
+*.p7b
+*.cer
+*.p12
+
+# Android Studio / Gradle
+androidapp/.gradle/
+androidapp/build/
+androidapp/app/build/
+androidapp/local.properties
+androidapp/.idea/
+*.apk
+*.aab
+*.jks
+*.keystore
