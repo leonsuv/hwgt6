@@ -5,10 +5,12 @@
 **Ladestand, Reichweite, Stecker, Schloss und Kilometerstand deines Opel direkt am Handgelenk.**
 Ohne Huawei Health, ohne AppGallery-Freigabe, ohne Identitätsprüfung.
 
-![Karten der Uhr-App](docs/screenshots/01_uebersicht_v2.png)
-![Laden](docs/screenshots/03_laden_v2.png)
-![Fahrzeug](docs/screenshots/04_fahrzeug_v2.png)
-![Menü](docs/screenshots/06_menue_v2.png)
+<img src="docs/screenshots/01_uebersicht_v2.png" width="300" alt="Übersicht"> <img src="docs/screenshots/03_laden_v2.png" width="300" alt="Laden"><br>
+<img src="docs/screenshots/04_fahrzeug_v2.png" width="300" alt="Fahrzeug"> <img src="docs/screenshots/06_menue_v2.png" width="300" alt="Menü">
+
+**Weitere Zustände:** lädt · Tür offen · Handy nicht erreichbar
+
+<img src="docs/screenshots/02_uebersicht_laedt_v2.png" width="196" alt="Lädt"> <img src="docs/screenshots/05_tuer_offen_v2.png" width="196" alt="Tür offen"> <img src="docs/screenshots/07_offline_v2.png" width="196" alt="Handy nicht erreichbar">
 
 </div>
 
@@ -26,15 +28,6 @@ pulsierendem Ladesymbol:
 | **Laden** | Restzeit, Reichweitenzuwachs (km/h), Ladeziel – oder Akku und Reichweite, wenn nicht geladen wird |
 | **Fahrzeug** | Verriegelt/Offen, Türen, Außentemperatur, Klima; antippen für alle Details |
 | **Menü** | Aktualisieren, Details, Einstellungen, wann das Auto zuletzt gemeldet hat |
-
-<details>
-<summary>Weitere Zustände</summary>
-
-| Lädt | Tür offen | Handy nicht erreichbar |
-| --- | --- | --- |
-| ![Lädt](docs/screenshots/02_uebersicht_laedt_v2.png) | ![Tür offen](docs/screenshots/05_tuer_offen_v2.png) | ![Offline](docs/screenshots/07_offline_v2.png) |
-
-</details>
 
 ## So funktioniert es
 
