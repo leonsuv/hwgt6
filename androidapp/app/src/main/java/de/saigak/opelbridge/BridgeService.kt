@@ -11,7 +11,6 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import org.json.JSONObject
-import java.util.concurrent.locks.ReentrantLock
 
 /**
  * Haelt die Bruecke am Leben: fragt das Fahrzeug im Intervall ab und bedient
@@ -23,26 +22,21 @@ import java.util.concurrent.locks.ReentrantLock
 class BridgeService : Service(), WatchServer.DataProvider {
 
     private lateinit var store: Store
-    private lateinit var api: OpelApi
     private var server: WatchServer? = null
+    private var wear: WearLink? = null
 
-    private val fetchLock = ReentrantLock()
     private var pollThread: Thread? = null
 
     @Volatile
     private var stopping = false
 
-    @Volatile
-    private var rawStatus: JSONObject? = null
-
     override fun onCreate() {
         super.onCreate()
-        Brands.load(this)
-        store = Store(this)
-        api = OpelApi(store)
+        store = VehicleData.store(this)
         running = true
         startForeground(NOTIFICATION_ID, buildNotification("startet ..."))
         startServer()
+        startWear()
         startPolling()
     }
 
@@ -54,6 +48,12 @@ class BridgeService : Service(), WatchServer.DataProvider {
         if (intent?.action == ACTION_REFRESH) {
             Thread { fetch(true) }.start()
         }
+        if (intent?.action == ACTION_PAIR_WATCH) {
+            wear?.requestPermission()
+        }
+        if (intent?.action == ACTION_RECONNECT_WATCH) {
+            wear?.connect()
+        }
         return START_STICKY
     }
 
@@ -62,6 +62,9 @@ class BridgeService : Service(), WatchServer.DataProvider {
         running = false
         server?.stop()
         server = null
+        wear?.disconnect()
+        wear = null
+        watchState = "nicht verbunden"
         pollThread?.interrupt()
         pollThread = null
         super.onDestroy()
@@ -83,6 +86,16 @@ class BridgeService : Service(), WatchServer.DataProvider {
         updateNotification()
     }
 
+    // ------------------------------------------------------- Wear Engine
+    private fun startWear() {
+        val link = WearLink(this, this) { text ->
+            watchState = text
+            updateNotification()
+        }
+        wear = link
+        link.connect()
+    }
+
     // ------------------------------------------------------------ Abruf
     private fun startPolling() {
         pollThread = Thread({
@@ -101,74 +114,25 @@ class BridgeService : Service(), WatchServer.DataProvider {
         }, "opel-poller").also { it.start() }
     }
 
-    /** Daten holen und im Store ablegen. Gibt true bei Erfolg zurueck. */
-    private fun fetch(force: Boolean): Boolean {
-        if (!store.loggedIn) {
-            store.lastError = "Nicht angemeldet"
-            lastMessage = "Nicht angemeldet"
-            updateNotification()
-            return false
-        }
-        if (!fetchLock.tryLock()) return false          // laeuft bereits
-        try {
-            val (vehicleId, _, name) = api.resolveVehicle()
-            val raw = api.status(vehicleId)
-            rawStatus = raw
-            val payload = Normalize.toWatchPayload(raw, name)
-            store.lastState = payload.toString()
-            store.lastStateAt = System.currentTimeMillis() / 1000
-            store.lastError = null
-            lastMessage = "%s  %s%%  %s km".format(
-                name,
-                payload.opt("lvl")?.toString() ?: "--",
-                payload.opt("rng")?.toString() ?: "--"
-            )
-            updateNotification()
-            return true
-        } catch (e: AuthException) {
-            store.lastError = "Anmeldung abgelaufen: ${e.message}"
-            lastMessage = "Anmeldung abgelaufen - neu anmelden"
-            Log.w(TAG, "Auth: ${e.message}")
-        } catch (e: Exception) {
-            store.lastError = e.message ?: e.toString()
-            lastMessage = "Fehler: ${e.message}"
-            Log.w(TAG, "Abruf: ${e.message}")
-        } finally {
-            fetchLock.unlock()
-            updateNotification()
-        }
-        return false
+    /** Daten holen (gemeinsame Logik in VehicleData) und Benachrichtigung auffrischen. */
+    private fun fetch(@Suppress("UNUSED_PARAMETER") force: Boolean): Boolean {
+        val ok = VehicleData.fetch(this)
+        lastMessage = VehicleData.lastMessage
+        updateNotification()
+        return ok
     }
 
     // -------------------------------------------- WatchServer.DataProvider
     override fun watchPayload(force: Boolean): JSONObject? {
-        val cacheAge = System.currentTimeMillis() / 1000 - store.lastStateAt
-        if (force || store.lastState == null || cacheAge > maxOf(60, store.pollSeconds)) {
-            fetch(true)
-        }
-        val cached = store.lastState ?: return null
-        return try {
-            val payload = Normalize.refreshAge(JSONObject(cached), store.lastStateAt)
-            store.lastError?.let { payload.put("err", it.take(120)) }
-            payload
-        } catch (e: Exception) {
-            null
-        }
+        val payload = VehicleData.watchPayload(this, force)
+        lastMessage = VehicleData.lastMessage
+        updateNotification()
+        return payload
     }
 
-    override fun rawState(): JSONObject? = rawStatus
+    override fun rawState(): JSONObject? = VehicleData.rawStatus
 
-    override fun info(): JSONObject = JSONObject()
-        .put("ok", store.lastError == null)
-        .put("provider", "android")
-        .put("logged_in", store.loggedIn)
-        .put("country", store.country)
-        .put("vehicle", store.vehicleName ?: "")
-        .put("poll_interval_s", store.pollSeconds)
-        .put("cache_age_s", System.currentTimeMillis() / 1000 - store.lastStateAt)
-        .put("last_error", store.lastError ?: JSONObject.NULL)
-        .put("commands", false)
-        .put("config", JSONObject().put("provider", "android"))
+    override fun info(): JSONObject = VehicleData.info(this)
 
     // ----------------------------------------------------- Benachrichtigung
     private fun buildNotification(text: String): Notification {
@@ -218,6 +182,8 @@ class BridgeService : Service(), WatchServer.DataProvider {
     companion object {
         const val ACTION_STOP = "de.saigak.opelbridge.STOP"
         const val ACTION_REFRESH = "de.saigak.opelbridge.REFRESH"
+        const val ACTION_PAIR_WATCH = "de.saigak.opelbridge.PAIR_WATCH"
+        const val ACTION_RECONNECT_WATCH = "de.saigak.opelbridge.RECONNECT_WATCH"
         private const val CHANNEL_ID = "opelbridge"
         private const val NOTIFICATION_ID = 4711
         private const val TAG = "BridgeService"
@@ -232,6 +198,11 @@ class BridgeService : Service(), WatchServer.DataProvider {
         var lastMessage: String = "gestoppt"
             private set
 
+        /** Zustand der Wear-Engine-Verbindung zur Uhr. */
+        @Volatile
+        var watchState: String = "nicht verbunden"
+            private set
+
         fun start(context: Context) {
             val intent = Intent(context, BridgeService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -244,6 +215,18 @@ class BridgeService : Service(), WatchServer.DataProvider {
         fun stop(context: Context) {
             context.stopService(Intent(context, BridgeService::class.java))
             lastMessage = "gestoppt"
+        }
+
+        fun pairWatch(context: Context) = sendAction(context, ACTION_PAIR_WATCH)
+        fun reconnectWatch(context: Context) = sendAction(context, ACTION_RECONNECT_WATCH)
+
+        private fun sendAction(context: Context, action: String) {
+            val intent = Intent(context, BridgeService::class.java).setAction(action)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
         }
 
         fun refresh(context: Context) {

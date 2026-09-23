@@ -31,8 +31,6 @@
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  border-bottom-width: 1px;
-  border-color: #1f1f1f;
 }
 
 .label {
@@ -64,20 +62,6 @@
 .result {
   font-size: 22px;
   color: #8c8c8c;
-  text-align: center;
-  width: 400px;
-}
-
-.result-ok {
-  font-size: 22px;
-  color: #3ddc84;
-  text-align: center;
-  width: 400px;
-}
-
-.result-bad {
-  font-size: 22px;
-  color: #ff5252;
   text-align: center;
   width: 400px;
 }

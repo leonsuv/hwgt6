@@ -10,6 +10,15 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Akku-Ausnahme: sonst kein Netz im Hintergrund fuer den WatchProvider -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Wear Engine laeuft ueber HMS Core und Huawei Health -->
+    <queries>
+        <package android:name="com.huawei.health" />
+        <package android:name="com.huawei.hwid" />
+    </queries>
+
     <application
         android:allowBackup="false"
         android:icon="@android:drawable/ic_menu_compass"
@@ -36,6 +45,18 @@
             android:name=".BridgeService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- Datenquelle fuer Gadgetbridge; Android startet die App dafuer bei
+             Bedarf selbst, auch nachdem der Akku-Manager sie beendet hat. -->
+        <provider
+            android:name=".WatchProvider"
+            android:authorities="de.saigak.opelbridge.watch"
+            android:exported="true" />
+
+        <!-- AGC-App-ID, unter der Wear Engine freigeschaltet ist -->
+        <meta-data
+            android:name="com.huawei.hms.client.appid"
+            android:value="${agcAppId}" />
 
     </application>
 </manifest>

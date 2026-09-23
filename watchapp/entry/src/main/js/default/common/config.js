@@ -4,23 +4,26 @@
  *  werden muss.
  * ===========================================================================
  *
- *  BASE_URL : Adresse der Opel-Bridge, erreichbar vom GEKOPPELTEN HANDY.
- *             Die Uhr hat kein eigenes WLAN-Routing - jeder Request laeuft
- *             ueber Huawei Health auf dem Telefon. Das Telefon muss die
- *             Bridge also erreichen (gleiches WLAN, VPN oder DynDNS).
+ *  Die GT-Uhr hat fuer Apps keinen eigenen Netzzugang. Die Daten kommen per
+ *  Wear Engine (Bluetooth) von der Android-App "Opel Bridge" auf dem
+ *  gekoppelten Handy. Damit Wear Engine die Verbindung erlaubt, muss die
+ *  Uhr die Handy-App eindeutig kennen:
  *
- *             Beispiele:
- *               'http://192.168.1.50:8787'      LAN
- *               'https://opel.meinserver.de'    ueber Internet (empfohlen)
+ *  PHONE_PACKAGE     : Paketname der Android-App (androidapp/app/build.gradle,
+ *                      applicationId)
+ *  PHONE_FINGERPRINT : SHA-256 des Zertifikats, mit dem die APK signiert
+ *                      ist - Hex, Grossbuchstaben, ohne Doppelpunkte.
+ *                      Debug-Keystore:  keytool -list -v -alias androiddebugkey
+ *                        -keystore ~/.android/debug.keystore -storepass android
  *
- *  TOKEN    : Shared Secret aus bridge/config.json (Feld "token").
- *             Die Bridge zeigt es beim Start an:
- *               py -m opelbridge --print-url
- *
- *  Kein abschliessender Schraegstrich bei BASE_URL!
+ *  BASE_URL / TOKEN  : nur noch fuer die HTTP-Schnittstelle der Handy-App
+ *                      (Browser-Test, Vorschau); die Uhr benutzt sie nicht.
  */
 var CONFIG = {
-  BASE_URL: 'http://192.168.1.50:8787',
+  PHONE_PACKAGE: 'de.saigak.opelbridge',
+  PHONE_FINGERPRINT: 'UniteDeviceManagement',
+
+  BASE_URL: 'http://127.0.0.1:8787',
   TOKEN: 'HIER_TOKEN_EINTRAGEN',
 
   /* Automatische Aktualisierung, waehrend die App offen ist (Sekunden).
@@ -43,10 +46,7 @@ var CONFIG = {
   METRIC: true,
 
   /* Vibrieren, wenn eine Aktion ausgefuehrt wurde. */
-  HAPTICS: true,
-
-  /* Remote-Befehle anzeigen (Bridge braucht allow_commands=true). */
-  SHOW_ACTIONS: true
+  HAPTICS: true
 };
 
 export default CONFIG;

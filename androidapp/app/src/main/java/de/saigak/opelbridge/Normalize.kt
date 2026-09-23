@@ -146,7 +146,10 @@ object Normalize {
         val charge = charging(electric)
         val status = charge?.optString("status")?.lowercase(Locale.ROOT) ?: ""
         out.put("chg", if (status == "inprogress") 1 else 0)
-        out.put("plg", if (charge?.optBoolean("plugged", false) == true) 1 else 0)
+        // "plugged" bleibt oft true, obwohl status schon "Disconnected" meldet
+        // (verifiziert 2026-09-22) - dann gilt der Status.
+        val plugged = charge?.optBoolean("plugged", false) == true && status != "disconnected"
+        out.put("plg", if (plugged) 1 else 0)
         out.put("kw", JSONObject.NULL)               // API liefert keine Ladeleistung
         number(charge, "chargingRate")?.let { out.put("kmh", Math.round(it)) }
         durationMinutes(charge?.optString("remainingTime"))?.let { out.put("eta", it) }
@@ -211,7 +214,7 @@ object Normalize {
             alerts.put("Privatmodus aktiv - keine Position")
         }
         if (obj(raw, "kinetic")?.optBoolean("moving", false) == true) {
-            alerts.put("Fahrzeug faehrt")
+            alerts.put("Fahrzeug fährt")
         }
         out.put("alt", alerts)
 

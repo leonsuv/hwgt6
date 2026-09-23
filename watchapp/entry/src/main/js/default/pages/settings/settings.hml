@@ -28,7 +28,7 @@
 
     <list-item class="item">
       <div class="row">
-        <text class="label">Bridge</text>
+        <text class="label">Handy-App</text>
         <text class="value">{{hostText}}</text>
       </div>
     </list-item>
@@ -40,7 +40,7 @@
     </list-item>
 
     <list-item class="item">
-      <text class="{{testClass}}">{{testText}}</text>
+      <text class="result" style="color: {{testColor}};">{{testText}}</text>
     </list-item>
 
     <list-item class="item">

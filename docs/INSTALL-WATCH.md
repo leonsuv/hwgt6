@@ -1,134 +1,121 @@
-# Watch-App bauen und auf die GT6 bringen
+# Uhr-App bauen, signieren und installieren
 
-Die Huawei Watch GT6 laeuft nicht mit dem grossen HarmonyOS der Mate-Telefone,
-sondern mit der schlanken **Lite-Wearable**-Laufzeit. Apps dafuer sind
-JS-Anwendungen (HML/CSS/JS), werden zu einer `.hap`-Datei gebaut, **muessen
-signiert sein** und werden ueber DevEco Studio oder AppGallery Connect
-verteilt. Ein Sideload wie eine APK auf Android gibt es nicht.
+Die Huawei Watch GT6 läuft mit der schlanken **Lite-Wearable**-Laufzeit von
+HarmonyOS. Apps dafür sind JS-Anwendungen (HML/CSS/JS), werden zu einem
+signierten Paket gebaut und hier über **Gadgetbridge (opel)** auf die Uhr
+gebracht – ohne Huawei Health, ohne AppGallery.
 
 ## Voraussetzungen
 
-| Was | Warum |
+| Was | Wofür |
 | --- | --- |
-| Windows- oder macOS-Rechner | DevEco Studio |
-| [DevEco Studio](https://developer.huawei.com/consumer/en/deveco-studio/) | Baut und signiert das Projekt |
-| Huawei-ID mit Entwicklerstatus (kostenlos, Identitaetspruefung noetig) | Ohne Signatur laeuft nichts auf der Uhr |
-| Die GT6, gekoppelt mit Huawei Health | Zielgeraet und Netzzugang der Uhr |
+| macOS (Windows geht mit DevEco ebenso, die Skripte sind für macOS/Linux) | Bauen |
+| [DevEco Studio](https://developer.huawei.com/consumer/en/deveco-studio/) 6.x | liefert hvigor, Node, Lite-SDK und Signaturwerkzeug |
+| Huawei-ID mit Zugang zu AppGallery Connect | Debug-Zertifikat und -Profil (kein Wear-Engine-Antrag, keine Identitätsprüfung nötig) |
+| Gadgetbridge (opel), mit der Uhr gekoppelt | Installation, siehe [GADGETBRIDGE.md](GADGETBRIDGE.md) |
 
-> Beim Einrichten von DevEco Studio die **Lite-Wearable-/JS-SDKs (API 6)**
-> mitinstallieren. Wenn eine sehr neue DevEco-Version keine Lite-Wearable-Vorlage
-> mehr anbietet, hilft DevEco Studio 3.1 aus dem Archiv &ndash; das Projektformat in
-> `watchapp/` entspricht dieser Generation.
+Die Skripte erwarten DevEco unter `/Applications/DevEco-Studio.app`; sonst
+`DEVECO_HOME=/pfad/zu/DevEco-Studio.app/Contents` setzen.
 
-## 1. Bridge-Adresse eintragen
+## 1. Prüfen
 
-`watchapp/entry/src/main/js/default/common/config.js`:
-
-```js
-var CONFIG = {
-  BASE_URL: 'http://192.168.1.50:8787',   // ohne / am Ende
-  TOKEN: 'AbCdEf...',                     // aus bridge/config.json
-  ...
-};
+```bash
+python3 tools/check_watchapp.py
 ```
 
-Die Adresse muss **vom Telefon aus** erreichbar sein, nicht vom PC &ndash; die Uhr
-tunnelt ihre Anfragen durch Huawei Health. Schneller Test: die URL
+Das prüft alles, was die Uhr-Laufzeit übel nimmt: ES6-Syntax (nur ES5 erlaubt),
+Nicht-ASCII-Zeichen im JS, kaputte HML/JSON-Dateien, fehlende Seiten.
 
-```
-http://192.168.1.50:8787/api/v1/watch?t=DEIN_TOKEN
-```
+## 2. Bauen
 
-im Browser des Telefons oeffnen. Kommt JSON zurueck, wird es auch auf der Uhr
-funktionieren. Kommt nichts, liegt es am Netz (WLAN, Firewall), nicht an der App.
-
-Danach pruefen:
-
-```bat
-py tools\check_watchapp.py
+```bash
+cd watchapp
+./build-watch.sh
 ```
 
-Das Werkzeug meldet Syntaxfehler, versehentliches ES6 (die Uhr kann kein
-`let`/`const`/Arrow-Funktionen), kaputte HML-Dateien und einen vergessenen
-Platzhalter im Token.
+Das nutzt hvigor und Node aus DevEco Studio; die IDE muss dafür nicht laufen.
+Alternativ in DevEco: *File → Open → `watchapp`* → *Build → Build Hap(s)*.
 
-## 2. Projekt oeffnen und bauen
+## 3. Signieren – einmalig einrichten
 
-1. DevEco Studio starten &rarr; *File &rarr; Open* &rarr; Ordner `watchapp` waehlen.
-2. Gradle laeuft durch (beim ersten Mal einige Minuten).
-3. *Build &rarr; Build Hap(s)/APP(s) &rarr; Build Hap(s)*.
-4. Ergebnis: `watchapp/entry/build/outputs/hap/debug/entry-debug-unsigned.hap`
-   (bzw. `release`).
+Die Uhr installiert nur signierte Pakete. Einmalig in `watchapp/signing/`
+ablegen (der Ordner steht in `.gitignore`):
 
-Erscheint ein Fehler zu `compileSdkVersion 6`: im SDK-Manager die API-6-Pakete
-fuer Lite Wearable nachinstallieren oder die Versionen in `build.gradle` an das
-lokal vorhandene SDK anpassen.
+| Datei | Herkunft |
+| --- | --- |
+| `opelwatch.p12`, `opelwatch.csr` | DevEco: *Build → Generate Key and CSR* (Alias `opelwatch`) |
+| `keystore-password.txt` | das dabei gewählte Passwort, eine Zeile |
+| `opelwatch-debug.cer` | AppGallery Connect → *Zertifikate* → Debug-Zertifikat aus der CSR |
+| `opelwatch-debug.p7b` | AppGallery Connect → *HAP Provision Profile* → Debug-Profil |
 
-## 3. Signieren
+In AppGallery Connect dafür:
 
-Ohne gueltige Signatur verweigert die Uhr die Installation.
+1. Ein Projekt und eine **HarmonyOS-App** (Gerätetyp *Wearable*) mit dem
+   Paketnamen **`de.saigak.opelwatch`** anlegen (oder in
+   `watchapp/entry/src/main/config.json` den eigenen eintragen – dann auch
+   `WATCH_PKG` im Gadgetbridge-Patch anpassen).
+2. Die Uhr als **Testgerät** registrieren. Die UDID zeigt DevEco an, wenn die
+   Uhr über WLAN-Debugging verbunden ist.
+3. Debug-Zertifikat aus der CSR erzeugen, dann das Debug-Profil mit
+   Zertifikat und Testgerät.
 
-1. In [AppGallery Connect](https://developer.huawei.com/consumer/en/service/josp/agc/index.html)
-   ein Projekt und eine **HarmonyOS-App** (Geraetetyp: Wearable) anlegen. Die
-   `bundleName` muss zu `watchapp/entry/src/main/config.json` passen
-   (`de.saigak.opelwatch`) &ndash; oder dort auf den eigenen Namen aendern.
-2. DevEco Studio: *File &rarr; Project Structure &rarr; Signing Configs* &rarr;
-   *Automatically generate signature* (empfohlen). DevEco erzeugt Schluessel,
-   Zertifikat und Profil und laedt sie in AGC hoch.
-3. Manuell geht es ueber *Build &rarr; Generate Key and CSR*, in AGC ein
-   Debug-Zertifikat (`.cer`) und ein Debug-Profil (`.p7b`) erzeugen und beides
-   in den Signing Configs hinterlegen.
+> Debug-Profile laufen ab. Danach ein neues Profil erzeugen, neu signieren
+> und neu installieren. Der Gadgetbridge-Dienst muss dafür **nicht** angepasst
+> werden: Der Fingerabdruck der Uhr-App hängt am Schlüssel, nicht am Zertifikat.
 
-Wichtig fuer den Debug-Weg: die Uhr muss in AGC als **Testgeraet** registriert
-sein. Die dafuer noetige Geraete-ID (UDID) zeigt DevEco beim Verbinden an, auf
-der Uhr steht sie unter *Einstellungen &rarr; System &rarr; Info &rarr; (mehrfach tippen)*.
-Ein Debug-Profil gilt fuer maximal 100 registrierte Geraete und laeuft nach
-einem Jahr ab.
+## 4. Signieren
 
-## 4. Auf die Uhr uebertragen
+```bash
+./sign-watch.sh 6
+```
 
-**Weg A &ndash; direkt aus DevEco Studio (fuer die eigene Uhr der uebliche Weg):**
+Das Skript schreibt die `config.json` in das klassische Format um, das die
+GT-Uhren verlangen (neuere DevEco-Builds bricht die Uhr sonst mit
+*Error 40* ab), baut das Binärpaket und signiert es. Ergebnis:
 
-1. Uhr per USB-Ladeschale mit dem Rechner verbinden.
-2. Auf der Uhr *Einstellungen &rarr; System &rarr; Entwickleroptionen &rarr; ADB-Debugging*
-   aktivieren (Entwickleroptionen erscheinen nach mehrfachem Tippen auf die
-   Versionsnummer unter *Info*).
-3. In DevEco Studio das Geraet in der Geraeteliste waehlen und *Run 'entry'*
-   druecken. Die App wird installiert und gestartet.
+* `dist/OpelWatch.fw` – **das hier installieren**
+* `dist/OpelWatch-signed.hap` – dasselbe als HAP (für DevEco/Huawei-Werkzeuge)
 
-**Weg B &ndash; ueber AppGallery Connect:** signiertes Release-`.hap` hochladen und
-als geschlossenen Test (bis zu 1000 Tester) verteilen. Die Installation laeuft
-dann ueber *Huawei Health &rarr; Geraet &rarr; App-Galerie der Uhr*. Dieser Weg braucht
-eine Pruefung durch Huawei, dauert also laenger, haelt aber dauerhaft.
+## 5. Installieren
 
-## 5. Erster Start
+```bash
+adb push dist/OpelWatch.fw /sdcard/Download/
+```
 
-Nach dem Start zeigt die App:
+Dann auf dem Telefon:
 
-* **Zahlen erscheinen** &ndash; alles richtig.
-* **"Bridge nicht konfiguriert"** &ndash; `config.js` wurde nicht angepasst oder
-  nicht neu gebaut.
-* **"Token abgelehnt (401)"** &ndash; Token in `config.js` und `bridge/config.json`
-  stimmen nicht ueberein.
-* **"Kein Kontakt zur Bridge"** &ndash; Telefon erreicht den Bridge-Rechner nicht:
-  anderes WLAN, Firewall, Rechner im Ruhezustand oder falsche IP. IP-Adressen
-  aus DHCP aendern sich &ndash; feste Adresse vergeben oder DynDNS benutzen.
-* **Uhrzeitangabe "vor 4 Std"** &ndash; kein Fehler: so alt ist die letzte Meldung
-  des Fahrzeugs. Karte 3 &rarr; *Jetzt aktualisieren* erzwingt eine frische Abfrage.
+**Gadgetbridge (opel) → ⋮ beim Gerät → Datei-Installer → `OpelWatch.fw` → Installieren**
 
-Auf Karte 3 &rarr; *Einstellungen &rarr; Verbindung testen* prueft die Uhr die Bridge und
-zeigt den aktiven Provider an.
+Kurz darauf steht **Opel Watch** in der App-Liste der Uhr.
+Eine neue Version wird genauso drüber installiert.
 
-## Was auf der Uhr absichtlich anders ist
+## 6. Erster Start
 
-* **ES5 statt moderner Syntax**: Die JS-Engine der Lite-Wearable-Laufzeit
-  (JerryScript) kennt kein `let`, `const`, keine Arrow-Funktionen und keine
-  Promises. Der gesamte App-Code haelt sich daran; `check_watchapp.py` wacht
-  darueber.
-* **Kein `position: absolute` fuer Layout**: Ueberlagerungen laufen ueber
-  `<stack>`, Listen ueber `<list>`/`<list-item>`.
-* **Kleines JSON**: Die Bridge liefert der Uhr kurze Schluessel
-  (`lvl`, `rng`, `chg`, ...) statt des vollen Modells &ndash; unter 700 Byte pro
-  Abruf, was Bluetooth-Latenz und Akku schont.
-* **Schwarzer Hintergrund**: AMOLED verbraucht fuer schwarze Pixel nahezu
-  keinen Strom.
+Die App öffnen – der Ring zieht sich auf den Ladestand auf. Wenn nicht:
+
+| Anzeige | Ursache |
+| --- | --- |
+| rot **„Keine Antwort vom Handy“** | Gadgetbridge (opel) nicht verbunden oder der Opel-Dienst nicht registriert – in Gadgetbridge verbinden, Protokoll prüfen ([GADGETBRIDGE.md](GADGETBRIDGE.md#fehlersuche)) |
+| überall **„--“**, aber keine rote Meldung | Verbindung steht, die Opel Bridge hat keine Daten – öffnen und prüfen, ob sie bei Opel angemeldet ist ([ANDROID-APP.md](ANDROID-APP.md)) |
+| Zahlen da, aber **„Auto meldete vor 3 Std“** | kein Fehler: so alt ist die letzte Meldung des Autos |
+
+**Menü → Einstellungen → Verbindung testen** muss **„OK - Opel“** zeigen.
+
+## Regeln der Lite-Laufzeit
+
+Wer an der Uhr-App arbeitet, stößt auf diese Eigenheiten der GT6:
+
+* **Nur ES5** (JerryScript): kein `let`/`const`, keine Arrow-Funktionen,
+  keine Promises. `import`/`export` gehen, sie werden beim Bauen aufgelöst.
+* **Nur ASCII im JS**, Umlaute als `\u00e4` usw.
+* **Kein RegExp:** `String.replace` wirft einen `TypeError` – mit
+  `indexOf`/`substring` arbeiten.
+* **Elemente wachsen nicht mit dem Inhalt.** Jeder Text und jeder Container
+  braucht eine feste Breite und Höhe, sonst wird er abgeschnitten oder bleibt
+  unsichtbar. Breiten nicht per `style` binden, sondern feste Klassen wählen.
+* **`class="{{x}}"` ist verboten** (Compilerfehler), mehrere Klassen pro
+  Element besser vermeiden – dynamische Optik über `style="color: {{x}}"` oder `if`.
+* **Nur `router.replace`** – `push` und `back` gibt es nicht.
+* **Animationen:** `@keyframes` kennt nur `from`/`to`. Der Ladering zählt
+  deshalb per `setInterval` hoch, Puls und Drehung laufen über `@keyframes`.
+* 466 × 466 px, rund, schwarzer Hintergrund (AMOLED).

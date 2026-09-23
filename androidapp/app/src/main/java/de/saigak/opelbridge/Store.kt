@@ -81,7 +81,8 @@ class Store(context: Context) {
         get() {
             val existing = prefs.getString(KEY_WATCH_TOKEN, null)
             if (!existing.isNullOrBlank()) return existing
-            val generated = randomToken()
+            // Beim Bauen aus der config.js der Uhr uebernommen, sonst gewuerfelt
+            val generated = BuildConfig.DEFAULT_WATCH_TOKEN.ifBlank { randomToken() }
             prefs.edit().putString(KEY_WATCH_TOKEN, generated).apply()
             return generated
         }

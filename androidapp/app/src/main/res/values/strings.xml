@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Opel Bridge</string>
+    <string name="section_wear">Huawei Health (optional)</string>
+    <string name="wear_hint">Normalerweise holt Gadgetbridge (opel) die Daten hier ab – dafür ist nichts zu tun. Diese Knöpfe sind nur für den offiziellen Weg über Huawei Health, der eine Wear-Engine-Freigabe in AppGallery Connect braucht.</string>
+    <string name="pair_watch">Uhr koppeln</string>
+    <string name="reconnect_watch">Uhr neu verbinden</string>
     <string name="subtitle">Holt die Fahrzeugdaten und liefert sie an die Huawei Watch GT6.</string>
 
     <string name="status_stopped">Brücke gestoppt</string>
     <string name="section_account">Konto</string>
     <string name="section_service">Dienst</string>
-    <string name="section_watch">Adresse für die Uhr</string>
+    <string name="section_watch">HTTP-Schnittstelle (nur zum Testen)</string>
 
     <string name="not_logged_in">Nicht angemeldet</string>
     <string name="country">Land</string>
@@ -17,7 +21,7 @@
     <string name="refresh_now">Jetzt aktualisieren</string>
     <string name="copy_config">Für config.js kopieren</string>
 
-    <string name="watch_hint">Diese Adresse und das Token in watchapp/…/common/config.js eintragen. 127.0.0.1 funktioniert, weil die Uhr ihre Anfragen über dieses Telefon schickt. Klappt das nicht, die WLAN-Adresse nehmen.</string>
+    <string name="watch_hint">Dieselben Daten, die die Uhr bekommt, im Browser: Adresse + ?t=Token. Die Uhr selbst benutzt diese Adresse nicht.</string>
 
     <string name="login_hint">Mit den Zugangsdaten der MyOpel-App anmelden (Land: %1$s). Danach schließt sich dieses Fenster von selbst.</string>
     <string name="login_consent_hint">Die Zustimmungsseite von Opel hängt öfter. Wenn hier nichts mehr passiert: unten auf „Anmeldung abschließen“ tippen.</string>

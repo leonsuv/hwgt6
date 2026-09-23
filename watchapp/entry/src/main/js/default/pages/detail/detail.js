@@ -60,10 +60,9 @@ export default {
     }
     rows.push({ label: 'Kilometer', value: view.odoText });
     rows.push({ label: 'Verriegelt', value: view.lockText });
-    rows.push({ label: 'Tueren', value: view.doorsText });
+    rows.push({ label: 'T\u00fcren', value: view.doorsText });
     rows.push({ label: 'Klima', value: view.climateText });
-    rows.push({ label: 'Innen', value: view.tempInText });
-    rows.push({ label: 'Aussen', value: view.tempOutText });
+    rows.push({ label: 'Au\u00dfen', value: view.tempOutText });
     if (view.hasPos) {
       rows.push({ label: 'Position', value: view.posText });
     }
@@ -79,6 +78,7 @@ export default {
   },
 
   back: function () {
-    router.back();
+    /* Lite-Wearables haben kein router.back - zurueck zur passenden Karte. */
+    router.replace({ uri: 'pages/index/index', params: { startPage: 2 } });
   }
 };

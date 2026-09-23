@@ -6,28 +6,55 @@ zuerst, dann [README.md](README.md) für die Nutzersicht.
 ## Was das ist
 
 Fahrzeugdaten aus **Opel Connect** (Stellantis, ex-PSA) auf einer **Huawei
-Watch GT6** anzeigen. Drei eigenständige Teile, ein gemeinsames Datenformat.
+Watch GT6** anzeigen. Vier Teile, ein gemeinsames Datenformat.
 
 | Verzeichnis | Sprache | Läuft auf | Zustand |
 | --- | --- | --- | --- |
-| `watchapp/` | JS (HarmonyOS Lite Wearable) | Watch GT6 | UI visuell abgenommen, statisch geprüft, **nie auf echter Uhr gelaufen** |
-| `androidapp/` | Kotlin | Android-Telefon | **nie kompiliert** (kein JDK/SDK auf dem Entwicklungsrechner) |
+| `watchapp/` | JS (HarmonyOS Lite Wearable) | Watch GT6 | **läuft auf der echten GT6 mit echten Opel-Daten** (vier Karten, animiert) |
+| `gadgetbridge/` | Java (Patch) | Android-Telefon | Patch auf Gadgetbridge-master `e2ef406c`; Opel-Dienst für den P2P-Kanal, auf der GT6 verifiziert |
+| `androidapp/` | Kotlin | Android-Telefon | „Opel Bridge“, auf Honor Magic 7 Pro mit echtem Opel-Konto verifiziert |
 | `bridge/` | Python 3.8+, nur stdlib | PC / NAS / Pi | 36 Tests grün, real gegen Mock gelaufen |
 
 ## Die eine Sache, die man verstanden haben muss
 
-**Die Watch GT6 hat für Apps kein eigenes IP-Networking.** Ein
-`@system.fetch` in der Uhr-App wird von Huawei Health per Bluetooth zum
-gekoppelten Telefon getunnelt und geht *dort* ins Netz.
+**Die Watch GT6 hat für Apps gar keinen Netzzugang — auch nicht über das
+Handy.** `@system.fetch` aus einer Lite-Wearable-App liefert auf der GT-Serie
+immer `conect socket fail` (Code -6). Das wurde am 2026-09-21 auf einer
+echten GT6 verifiziert; die frühere Annahme „Fetch wird durch Huawei Health
+getunnelt" war falsch.
+
+Der einzige Datenweg in eine Uhr-App ist Huaweis **Bluetooth-P2P-Kanal**
+(Wear Engine, Dienst `0x34`). Offiziell läuft er über Huawei Health und
+verlangt eine Wear-Engine-Freigabe der Android-App in AppGallery Connect
+(Identitätsprüfung – vom Nutzer abgelehnt). **Tatsächlich genutzt wird
+Gadgetbridge:** Es spricht das Huawei-Protokoll selbst, die Uhr prüft nur
+Paketnamen und Fingerabdrücke als Text.
+
+```
+Uhr-App <-P2P-> Gadgetbridge (opel) <-ContentProvider-> Opel Bridge <-HTTPS-> Opel
+```
 
 Folgen daraus:
 
-* Die Uhr kann `http://127.0.0.1:8787` aufrufen — das ist dann **das
-  Telefon**, nicht die Uhr. Genau deshalb funktioniert die Android-App.
-* Bei der PC-Bridge muss **das Telefon** den Server erreichen, nicht der PC.
-  Häufigster Supportfall: „geht nicht" = Telefon im Mobilfunk statt WLAN.
-* Es gibt keine dauerhafte Hintergrund-Aktualisierung auf der Uhr. Die App
-  aktualisiert nur, solange sie offen ist.
+* Die Uhr-App (`watchapp/.../p2p.js`, `api.js`) schickt `{"cmd":"state"|"info"|"log"}`
+  an `PHONE_PACKAGE`. Gadgetbridges `HuaweiP2POpelService` (aus
+  `gadgetbridge/hwgt6-opel.patch`) holt die Antwort per ContentProvider
+  `content://de.saigak.opelbridge.watch` bei der Opel Bridge, kompaktiert sie
+  (P2P-Nachrichten an die Uhr werden ab ~200 Byte abgeschnitten) und schickt
+  sie mit `"rt"` zurück.
+* **Fingerabdrücke spiegeln:** Der Dienst verwendet exakt die Texte, die die
+  Uhr selbst sendet (Telefon `UniteDeviceManagement`, Uhr
+  `de.saigak.opelwatch_<Base64-Schlüssel>`). Andere Werte ⇒ Zustellcode 206.
+* Die Uhr-App meldet eigene Ausnahmen als `{"cmd":"log"}`; Gadgetbridge
+  schreibt sie nach `files/opelprobe.txt` (logcat ist auf Honor gesperrt):
+  `adb shell run-as nodomain.freeyourgadget.gadgetbridge.opel cat files/opelprobe.txt`.
+* Die Opel Bridge braucht eine **Akku-Ausnahme**, sonst sperrt Android ihr im
+  Hintergrund das Netz (`blocked=APP_BACKGROUND`).
+* `androidapp/.../WearLink.kt` ist der offizielle Weg über Huawei Health –
+  ohne AGC-Freigabe „Code 12“, derzeit ungenutzt. Die PC-Bridge erreicht die
+  Uhr nicht; sie bleibt für Vorschau, Tests und Fernbefehle.
+* Es gibt keine Hintergrund-Aktualisierung auf der Uhr. Die App aktualisiert
+  nur, solange sie offen ist.
 
 ## Datenvertrag (nicht einseitig ändern!)
 
@@ -57,8 +84,23 @@ Die Lite-Wearable-Laufzeit (JerryScript) ist kein moderner Browser:
 * **Kein `position: absolute` fürs Layout**: Überlagerungen über `<stack>`,
   Listen über `<list>`/`<list-item>`.
 * **CSS-Selektoren nur als einzelne Klassen** — keine Verschachtelung, kein
-  `@media`. Dynamische Klassen komplett in JS berechnen
-  (`class="{{ageClass}}"`), nicht `class="age {{x}}"` mischen.
+  `@media`. **`class="{{x}}"` ist auf Lite nicht erlaubt** (Compiler-Fehler
+  „class selector does not support data binding"). Dynamische Optik über
+  `style="color: {{x}};"` oder `if`/`show` lösen.
+* **Nur die Lite-CSS-Eigenschaften**: `border-width`/`border-color`/
+  `border-radius` (keine Seiten-Varianten wie `border-bottom-width`), keine
+  `indicator-*` am `swiper`, Winkel mit `deg`. Die vollständige Liste steht in
+  `LITE_PROP_NAME_GROUPS` in DevEco:
+  `sdk/default/openharmony/js/build-tools/ace-loader/lib/styler/lib/validator.js`.
+* **Navigation nur mit `router.replace({ uri, params })`** — `router.push` und
+  `router.back` existieren auf der GT6 nicht (`typeof router.push ===
+  'undefined'`, verifiziert 2026-09-21). „Zurück" = `replace` zur Startseite
+  mit `params: { startPage: n }`, die Startseite liest den Wert in `onInit`.
+* **Kein RegExp:** `String.replace` wirft auf der GT6 `TypeError` – mit
+  `indexOf`/`substring` arbeiten.
+* **Elemente wachsen nicht mit dem Inhalt:** Texte und Container brauchen
+  feste Breite und Höhe, sonst abgeschnitten oder unsichtbar. Keine Breiten
+  per `style`-Bindung, stattdessen feste Klassen + `if`.
 * Bildschirm ist **466 × 466 px rund**, Hintergrund schwarz (AMOLED).
 
 `py tools/check_watchapp.py` (macOS: `python3 tools/check_watchapp.py`)
@@ -128,18 +170,19 @@ für Ladezustand, leerer Akku, offene Tür, offline, Hybrid.
 
 ## Was noch offen ist
 
-* **Android-App kompilieren** — sie wurde nie durch einen Compiler geschickt.
-  Erster Schritt am MacBook: Android Studio, `androidapp` öffnen, bauen.
-  Bewusst ohne Fremdbibliotheken (`HttpURLConnection` + `org.json`), damit
-  wenig schiefgehen kann.
-* **Watch-App auf echter Hardware** — braucht Huawei-Entwicklerkonto,
-  Signatur und in AppGallery Connect registriertes Testgerät. Kein Sideload
-  wie bei Android. Siehe [docs/INSTALL-WATCH.md](docs/INSTALL-WATCH.md).
-* **Fernbefehle in der Android-App** fehlen absichtlich (bräuchten MQTT+OTP
-  in Kotlin). Der Server antwortet dort mit 501 und klarer Meldung; die
-  Python-Bridge kann sie.
-* DevEco Studio: sehr neue Versionen bieten teils keine
-  Lite-Wearable-Vorlage mehr; das Projektformat entspricht DevEco 3.1 / API 6.
+* **Eigene Zifferblätter (.hwt)** über Gadgetbridge: Upload wird von der GT6
+  bestätigt, das Zifferblatt erscheint aber nie. Ausgeschlossen: Auflösung,
+  Formatversion (Uhr: 2.1–2.12), nur `watchface.bin` vs. ganzes Paket,
+  Version `1.0.0` vs. `2.1.1`. Nächster Schritt wäre ein HCI-Snoop von Huawei
+  Health – verlangt Zurücksetzen der Uhr, vom Nutzer abgelehnt.
+* **Fernbefehle** (Klima, Wecken) bewusst nicht: jede OTP-Registrierung
+  riskiert das Opel-Konto. Die Python-Bridge kann sie.
+* **GT-Uhren lehnen die config.json moderner DevEco-Builds ab** (Error 40).
+  `watchapp/sign-watch.sh` schreibt sie ins klassische Format um (Ability
+  und JS-Bundle heißen `default`, `icon.bin`/`icon_small.bin`, jede
+  Berechtigung mit `reason` + `usedScene.when`), signiert mit
+  `hap-sign-tool` und legt `dist/OpelWatch.fw` für den Datei-Installer von
+  Gadgetbridge ab.
 
 ## Umgangston mit diesem Projekt
 

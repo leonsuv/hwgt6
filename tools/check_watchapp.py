@@ -124,10 +124,17 @@ def check_config() -> None:
         note_bad("config.js fehlt")
         return
     source = path.read_text(encoding="utf-8")
+    # Die Uhr spricht nur per Bluetooth-P2P mit dem Handy - dafuer zaehlen
+    # Paketname und Fingerabdruck der Gegenstelle. TOKEN/BASE_URL sind nur
+    # noch fuer die HTTP-Testschnittstelle der Android-App.
+    for key in ("PHONE_PACKAGE", "PHONE_FINGERPRINT"):
+        m = re.search(key + r":\s*'([^']*)'", source)
+        if not m or not m.group(1):
+            note_bad("config.js: %s fehlt oder ist leer" % key)
+        else:
+            note_ok("%s gesetzt" % key)
     if "HIER_TOKEN_EINTRAGEN" in source:
-        note_bad("config.js: TOKEN ist noch der Platzhalter")
-    else:
-        note_ok("TOKEN gesetzt")
+        print("  hinweis TOKEN ist der Platzhalter (nur fuer den HTTP-Test der Android-App)")
     match = re.search(r"BASE_URL:\s*'([^']*)'", source)
     base = match.group(1) if match else ""
     if not base.startswith("http"):

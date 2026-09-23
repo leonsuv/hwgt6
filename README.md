@@ -1,206 +1,159 @@
+<div align="center">
+
 # Opel Connect auf der Huawei Watch GT6
 
-Zeigt Ladestand, Reichweite, Verriegelung, Klima und Kilometerstand des Opel
-direkt auf der Uhr.
+**Ladestand, Reichweite, Stecker, Schloss und Kilometerstand deines Opel direkt am Handgelenk.**
+Ohne Huawei Health, ohne AppGallery-Freigabe, ohne Identitätsprüfung.
 
-Die Uhr hat fuer Apps **kein eigenes IP-Networking**. Jeder `fetch` der
-Uhr-App wird von Huawei Health durch das gekoppelte Telefon geleitet. Es
-braucht also eine Gegenstelle, die das Telefon erreicht - dafuer gibt es zwei
-Varianten:
+![Karten der Uhr-App](docs/screenshots/01_uebersicht.png)
+![Laden](docs/screenshots/03_laden.png)
+![Fahrzeug](docs/screenshots/04_fahrzeug.png)
+![Menü](docs/screenshots/06_menue.png)
 
-```
- A) ohne PC:                                B) mit Server im Haus:
+</div>
 
-  Uhr  --Health/BT-->  Android-App           Uhr --Health/BT--> Telefon --WLAN-->
-                       (Telefon)                                        Bridge (PC/NAS)
-                            |                                               |
-                            v                                               v
-                   api.groupe-psa.com                            api.groupe-psa.com
-```
+---
 
-| Teil | Wo | Aufgabe |
+## Was es ist
+
+Eine eigene App für die **Huawei Watch GT6**, die die Daten aus **Opel Connect**
+(Stellantis) anzeigt – vier Karten zum Wischen, mit animiertem Ladering und
+pulsierendem Ladesymbol:
+
+| Karte | Inhalt |
+| --- | --- |
+| **Übersicht** | großer Ladestand, Reichweite, Stecker-Symbol, Kilometerstand, „gerade aktualisiert“ |
+| **Laden** | Restzeit, Reichweitenzuwachs (km/h), Ladeziel – oder Akku und Reichweite, wenn nicht geladen wird |
+| **Fahrzeug** | Verriegelt/Offen, Türen, Außentemperatur, Klima; antippen für alle Details |
+| **Menü** | Aktualisieren, Details, Einstellungen, wann das Auto zuletzt gemeldet hat |
+
+<details>
+<summary>Weitere Zustände</summary>
+
+| Lädt | Tür offen | Handy nicht erreichbar |
 | --- | --- | --- |
-| **Watch-App** (`watchapp/`) | Huawei Watch GT6 | Drei Karten zum Wischen, Details, Einstellungen |
-| **Android-App** (`androidapp/`) | Telefon | Login, Token-Erneuerung, HTTP-Server fuer die Uhr |
-| **Bridge** (`bridge/`) | PC, NAS, Raspberry Pi | Dasselbe fuer den Serverbetrieb, zusaetzlich Fernbefehle |
+| ![Lädt](docs/screenshots/02_uebersicht_laedt.png) | ![Tür offen](docs/screenshots/05_tuer_offen.png) | ![Offline](docs/screenshots/07_offline.png) |
 
-Beide Gegenstellen liefern **dasselbe JSON**, die Uhr-App ist identisch. Ein
-Test haelt das automatisch konsistent
-(`bridge/tests/test_android_consistency.py`).
+</details>
 
-## So sieht es aus
+## So funktioniert es
 
-| Energie | Status | Aktionen |
+Die GT6 hat für Apps **keinen Netzzugang** – auch nicht über das Handy. Der
+einzige Weg in eine Uhr-App ist Huaweis Bluetooth-P2P-Kanal. Offiziell läuft
+der über Huawei Health und eine AppGallery-Freigabe (mit Identitätsprüfung).
+Dieses Projekt nimmt stattdessen **[Gadgetbridge](https://gadgetbridge.org)**,
+das Huaweis Bluetooth-Protokoll quelloffen nachgebaut hat, und ergänzt einen
+kleinen Opel-Dienst:
+
+```mermaid
+flowchart LR
+    W["⌚ Uhr-App<br/>(GT6)"] <-- "Bluetooth P2P" --> G["Gadgetbridge (opel)<br/>Opel-Dienst"]
+    G -- "ContentProvider" --> B["Opel Bridge<br/>(Android-App)"]
+    B -- "HTTPS" --> O[("Opel Connect<br/>api.groupe-psa.com")]
+```
+
+| Teil | Ordner | Aufgabe |
 | --- | --- | --- |
-| ![Energie](docs/screenshots/01_energie.png) | ![Status](docs/screenshots/02_status.png) | ![Aktionen](docs/screenshots/03_aktionen.png) |
+| **Uhr-App** | [`watchapp/`](watchapp) | Lite-Wearable-App (JS/HML), vier Karten, Details, Einstellungen |
+| **Gadgetbridge (opel)** | [`gadgetbridge/`](gadgetbridge) | Patch für Gadgetbridge: nimmt Anfragen der Uhr an und reicht sie weiter |
+| **Opel Bridge** | [`androidapp/`](androidapp) | Opel-Login, Token-Erneuerung, holt die Fahrzeugdaten |
+| **PC-Bridge** *(optional)* | [`bridge/`](bridge) | Python-Server für Vorschau, Tests und Fernbefehle am Rechner |
 
-| Akku niedrig | Tuer offen | Keine Verbindung |
-| --- | --- | --- |
-| ![Niedrig](docs/screenshots/04_akku_niedrig.png) | ![Tuer](docs/screenshots/05_tuer_offen.png) | ![Offline](docs/screenshots/06_offline.png) |
+Android startet die Opel Bridge bei jeder Anfrage selbst – sie muss nicht
+geöffnet sein und übersteht auch den Akku-Manager von Honor/Huawei.
 
-Am Lader, so wie die echte Opel-Schnittstelle es meldet (km/h statt kW, weil
-die API keine Ladeleistung liefert):
+## Einrichten
 
-![Laden](docs/screenshots/08_psa_laden.png)
+Drei Schritte, jeweils mit eigener Anleitung:
 
-Echte Aufnahmen der mitgelieferten Vorschau (`tools/preview.html`), die
-dieselbe Formatierlogik benutzt wie die Uhr.
+1. **[Opel Bridge installieren und bei Opel anmelden](docs/ANDROID-APP.md)**
+2. **[Gadgetbridge (opel) bauen und die Uhr koppeln](docs/GADGETBRIDGE.md)**
+3. **[Uhr-App bauen, signieren und installieren](docs/INSTALL-WATCH.md)**
 
-## Schnellstart
+Kurzfassung für macOS, wenn Android SDK, OpenJDK 21 und DevEco Studio schon da sind:
 
-### Variante A: nur Telefon und Uhr
+```bash
+# 1. Opel Bridge
+cd androidapp && ./gradlew assembleDebug && adb install -r app/build/outputs/apk/debug/app-debug.apk
 
-1. `androidapp` in Android Studio oeffnen und auf dem Telefon installieren.
-2. In der App bei Opel anmelden (der eingebettete Browser faengt die
-   Rueckleitung selbst ab - nichts abtippen).
-3. *Fuer config.js kopieren* antippen, die zwei Zeilen in
-   `watchapp/entry/src/main/js/default/common/config.js` einsetzen.
-4. Uhr-App bauen und installieren.
+# 2. Gadgetbridge (opel)
+cd ../gadgetbridge && ./build.sh --install
 
-Ausfuehrlich: [docs/ANDROID-APP.md](docs/ANDROID-APP.md).
-
-### Variante B: Bridge auf einem Rechner
-
-```bat
-cd bridge
-start-bridge.cmd
+# 3. Uhr-App -> dist/OpelWatch.fw, dann in Gadgetbridge über den Datei-Installer auf die Uhr
+cd ../watchapp && ./build-watch.sh && ./sign-watch.sh 6
 ```
 
-Laeuft sofort mit einem **simulierten Fahrzeug** (`provider: mock`), sodass
-sich Uhr-App und Vorschau ohne Opel-Konto testen lassen. Beim ersten Start
-entsteht `bridge/config.json` mit einem zufaelligen Token; die Konsole zeigt
-die fertige Uhr-URL.
+## Bedienung
 
-Im Browser pruefen: `http://127.0.0.1:8787/` (Status) und
-`http://127.0.0.1:8787/preview` (Uhr-Vorschau mit Testknoepfen).
-
-Fuer echte Daten den Provider umstellen - am einfachsten auf die eigene
-Bibliothek `opelapi`:
-
-```json
-{ "provider": "opelapi", "allow_commands": true }
-```
-
-Alle Wege inklusive Login: [docs/OPEL-CONNECT-SETUP.md](docs/OPEL-CONNECT-SETUP.md).
-
-### Watch-App
-
-`BASE_URL` und `TOKEN` in `watchapp/.../common/config.js` eintragen, dann:
-
-```bat
-py tools\check_watchapp.py
-```
-
-Das prueft Syntax, ES5-Konformitaet, HML, JSON und die Konfiguration. Bauen
-und Installieren: [docs/INSTALL-WATCH.md](docs/INSTALL-WATCH.md).
-
-## Bedienung auf der Uhr
-
-* **Wischen** - zwischen Energie, Status und Aktionen wechseln
-* **Karte 2 antippen** - Detailliste (Position, Ladeziel, Restzeit, Quelle)
-* **Karte 3** - sofort aktualisieren, Vorklimatisierung, Fahrzeug wecken,
-  Einstellungen (Intervall, Einheiten, Vibration, Verbindungstest)
-* Letzter Stand wird auf der Uhr zwischengespeichert: beim Start sofort
-  sichtbar, bei zu hohem Alter als veraltet markiert
-* Endet ein Ladevorgang, waehrend die App offen ist, vibriert die Uhr einmal
-
-Fernbefehle gibt es nur ueber die Bridge mit Provider `opelapi` oder `psacc`;
-die Android-App meldet dafuer sauber "nicht unterstuetzt" (Stellantis
-verlangt dort MQTT mit OTP-Geraeteschluessel).
+* **Wischen** wechselt die Karten, die Punkte unten zeigen, wo du bist.
+* **Aktualisieren** (Menü) fragt sofort frisch bei Opel an – wie das Herunterziehen in der Opel-App.
+* **„gerade aktualisiert“** oben auf Karte 1 ist der Abruf bei Opel; **„Auto meldete vor …“**
+  im Menü ist die letzte Meldung des Autos selbst. Ein geparktes Auto meldet sich selten –
+  das ist normal.
+* Solange die App offen ist, aktualisiert sie jede Minute (beim Laden alle 30 s) und
+  vibriert, wenn ein Ladevorgang endet.
 
 ## Projektaufbau
 
 ```
-watchapp/                   HarmonyOS-Lite-Wearable-Projekt (DevEco Studio)
+watchapp/                  Uhr-App (HarmonyOS Lite Wearable, DevEco/hvigor)
   entry/src/main/js/default/
-    common/config.js        >>> HIER URL UND TOKEN EINTRAGEN <<<
-    common/api.js           Netzwerk, Cache, Einstellungen
-    common/util.js          Formatierung (auch von der Vorschau genutzt)
-    pages/index             Hauptseite mit drei Karten
-    pages/detail            Detailliste
-    pages/settings          Einstellungen
-androidapp/                 Android-Bruecke (Kotlin, ohne Fremdbibliotheken)
-  app/src/main/java/de/saigak/opelbridge/
-    OpelApi.kt              OAuth-Login, Token-Erneuerung, Fahrzeugdaten
-    Normalize.kt            Rohantwort -> Uhr-JSON
-    WatchServer.kt          HTTP-Server fuer die Uhr
-    BridgeService.kt        Vordergrunddienst mit Abfrageschleife
-    LoginActivity.kt        Anmeldung im WebView (beide Wege)
-bridge/                     Python-Bridge, nur Standardbibliothek
-  opelbridge/
-    server.py               HTTP-Server, Token-Pruefung, Poller
-    model.py                Normalisiertes Fahrzeugmodell (+ Uhr-Format)
-    providers/
-      opelapi_provider.py   Bibliothek 'opelapi' (empfohlen, kann Befehle)
-      psacc.py              psa_car_controller
-      stellantis.py         Direkte Stellantis-API
-      mock.py               Simuliertes Fahrzeug
-  tests/                    36 Tests (30 ohne installierte opelapi-Bibliothek)
-tools/
-  preview.html              Uhr-Simulator im Browser
-  check_watchapp.py         Statische Pruefung vor dem Bauen
-docs/                       Anleitungen
+    common/api.js          Anfragen, Zwischenspeicher, Einstellungen
+    common/p2p.js          Bluetooth-P2P zur Gegenstelle auf dem Handy
+    common/util.js         Formatierung (auch von tools/preview.html genutzt)
+    common/images/         Icons (Stecker, Schloss, Menü)
+    pages/index            die vier Karten
+    pages/detail           Detailliste
+    pages/settings         Einstellungen und Verbindungstest
+  build-watch.sh           bauen ohne IDE
+  sign-watch.sh            Paket für die GT-Serie umschreiben und signieren
+gadgetbridge/
+  hwgt6-opel.patch         Änderungen an Gadgetbridge (Opel-Dienst, eigener Paketname)
+  build.sh                 klont Gadgetbridge, wendet den Patch an, baut
+androidapp/                Opel Bridge (Kotlin, ohne Fremdbibliotheken)
+  .../OpelApi.kt           OAuth-Login, Token-Erneuerung, Fahrzeugstatus
+  .../Normalize.kt         Opel-Antwort -> kompaktes Uhr-JSON
+  .../VehicleData.kt       Abruf und Zwischenspeicher
+  .../WatchProvider.kt     Schnittstelle für Gadgetbridge
+bridge/                    PC-Bridge (Python, nur Standardbibliothek) + Tests
+tools/                     check_watchapp.py, Browser-Vorschau
+docs/                      Anleitungen
 ```
 
 ## Tests
 
-```bat
-cd bridge
-py -m pytest tests -q         :: Normalisierung, HTTP-API, Provider, Konsistenz
-cd ..
-py tools\check_watchapp.py    :: Watch-App: Syntax, ES5, HML, JSON, Seiten
+```bash
+cd bridge && python3 -m pytest tests -q     # Normalisierung, HTTP-API, Provider, Konsistenz
+cd .. && python3 tools/check_watchapp.py    # Uhr-App: ES5, ASCII, HML, JSON, Seiten
 ```
 
-Die Tests laufen ohne Opel-Konto. Die Abbildung der echten API wird gegen das
-Modell der Bibliothek `opelapi` geprueft, sobald diese installiert ist -
-sonst wird dieser Teil uebersprungen.
-
-## Dauerbetrieb der Bridge
-
-**Windows:** `schtasks /create /tn "Opel Bridge" /tr "py -m opelbridge" /sc onlogon /rl highest`
-(Arbeitsverzeichnis auf `...\hwgt6\bridge` setzen)
-
-**Linux (systemd):**
-
-```ini
-[Unit]
-Description=Opel Bridge fuer Huawei Watch GT6
-After=network-online.target
-
-[Service]
-WorkingDirectory=/opt/hwgt6/bridge
-ExecStart=/usr/bin/python3 -m opelbridge
-Restart=always
-RestartSec=20
-
-[Install]
-WantedBy=multi-user.target
-```
-
-**Docker:** `docker compose up -d` (Konfiguration landet in `./data/config.json`)
-
-## Sicherheit
-
-* Jeder Zugriff braucht das Token aus `bridge/config.json` bzw. aus der
-  Android-App; verglichen wird zeitkonstant.
-* `bridge/config.json`, `state.json` und die Tokens der App enthalten
-  Zugangsdaten zum Fahrzeug. Die Dateien stehen in `.gitignore` und gehoeren
-  nicht in ein Repository.
-* Fernbefehle sind mit `allow_commands: false` abgeschaltet.
-* Von unterwegs: nicht den Port ins Internet weiterleiten, sondern VPN
-  (WireGuard/Tailscale) oder Reverse Proxy mit HTTPS. `tls_cert`/`tls_key`
-  ermoeglichen auch direktes HTTPS.
+Das Datenformat für die Uhr (26 kurze Felder, < 700 Byte) ist an drei Stellen
+implementiert – PC-Bridge, Opel Bridge, Uhr-App. Ein Test hält sie
+automatisch deckungsgleich. Feldbedeutungen: [docs/API.md](docs/API.md).
 
 ## Grenzen
 
-* **Keine offizielle Opel-Schnittstelle.** Stellantis kann sie jederzeit
-  aendern; dann muss `providers/` bzw. `OpelApi.kt` nachgezogen werden - die
-  Uhr bleibt unberuehrt.
-* **Daten sind so frisch, wie das Fahrzeug sie meldet.** "vor 3 Std" ist bei
-  einem parkenden Auto normal. Zu haeufiges Abfragen weckt das Modem und
-  kostet Starterbatterie; 5 Minuten sind bewusst konservativ.
-* **Die Uhr-App laeuft nur, solange sie offen ist.** Lite-Wearable-Apps
-  duerfen auf der GT-Serie nicht dauerhaft im Hintergrund funken.
-* **Installation auf der Uhr braucht ein Huawei-Entwicklerkonto.** Apps fuer
-  die GT-Serie muessen signiert werden, ein Sideload wie bei Android gibt es
-  nicht. Siehe [docs/INSTALL-WATCH.md](docs/INSTALL-WATCH.md).
+* **Keine offizielle Schnittstelle.** Stellantis kann die API jederzeit ändern;
+  nachgezogen wird dann nur in `OpelApi.kt` bzw. `bridge/opelbridge/providers/`.
+* **Daten sind so frisch, wie das Auto sie meldet.** Aktualisieren holt den
+  neuesten Stand bei Opel, weckt das Auto aber nicht.
+* **Keine Fernbefehle** über die Uhr (Klima, Verriegeln) – bewusst, um das
+  Opel-Konto nicht mit Geräteregistrierungen zu gefährden.
+* **Die Uhr-App aktualisiert nur, solange sie offen ist** – Lite-Wearable-Apps
+  dürfen auf der GT-Serie nicht im Hintergrund funken.
+* **Eigene Zifferblätter (.hwt)** lassen sich über Gadgetbridge auf der GT6
+  derzeit nicht installieren (die Uhr nimmt die Datei an, übernimmt sie aber nicht).
+
+## Sicherheit
+
+`bridge/config.json`, `bridge/state.json`, die Signaturschlüssel in
+`watchapp/signing/` und die Tokens der Opel Bridge enthalten Zugang zum
+Fahrzeug bzw. zur Signatur – alles steht in `.gitignore`. Die Opel Bridge
+beantwortet Provider-Aufrufe nur von Gadgetbridge; Tokens werden nie
+protokolliert oder ausgegeben.
+
+## Lizenz und Dank
+
+Der Gadgetbridge-Patch steht wie Gadgetbridge unter der **AGPL-3.0**.
+Dank an das [Gadgetbridge-Team](https://codeberg.org/Freeyourgadget/Gadgetbridge)
+für das offene Huawei-Protokoll – ohne das gäbe es diesen Weg nicht.

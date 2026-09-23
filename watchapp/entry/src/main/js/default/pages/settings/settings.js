@@ -11,7 +11,7 @@ export default {
     hapticText: 'an',
     hostText: '--',
     testText: 'noch nicht geprueft',
-    testClass: 'result',
+    testColor: '#8c8c8c',
     versionText: 'OpelWatch 1.0.0'
   },
 
@@ -29,12 +29,11 @@ export default {
     this.hapticText = prefs.haptics === false ? 'aus' : 'an';
   },
 
-  /* Nur Host und Port anzeigen - das Token gehoert nicht auf den Bildschirm. */
+  /* Gegenstelle: die Handy-App, mit der die Uhr per Wear Engine spricht. */
   shortHost: function () {
-    var url = CONFIG.BASE_URL || '';
-    var text = url.replace('https://', '').replace('http://', '');
+    var text = CONFIG.PHONE_PACKAGE || '';
     if (text.length > 22) {
-      text = text.substring(0, 21) + '\u2026';
+      text = '\u2026' + text.substring(text.length - 21);
     }
     return text || 'nicht gesetzt';
   },
@@ -73,14 +72,15 @@ export default {
   test: function () {
     var self = this;
     this.testText = 'pruefe ...';
-    this.testClass = 'result';
+    this.testColor = '#8c8c8c';
     api.ping(function (ok, message) {
       self.testText = message;
-      self.testClass = ok ? 'result-ok' : 'result-bad';
+      self.testColor = ok ? '#3ddc84' : '#ff5252';
     });
   },
 
   back: function () {
-    router.back();
+    /* Lite-Wearables haben kein router.back - zurueck zur passenden Karte. */
+    router.replace({ uri: 'pages/index/index', params: { startPage: 3 } });
   }
 };

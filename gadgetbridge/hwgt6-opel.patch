@@ -1,0 +1,394 @@
+diff --git a/app/build.gradle b/app/build.gradle
+index aab8c819..11a771be 100644
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -23,7 +23,7 @@ final def getVersionCode = { ->
+         }.standardOutput.asText.get().trim()
+         return Integer.valueOf(commitCount)
+     } catch (ignored) {
+-        return null
++        return 248
+     }
+ }
+ 
+@@ -172,8 +172,10 @@ android {
+             getIsDefault().set(true)
+             // the default build product flavor
+             dimension "device_type"
+-            //applicationIdSuffix ""
+-            //versionNameSuffix ""
++            // hwgt6: eigener Paketname + Provider, damit die Opel-Variante
++            // NEBEN der normalen Gadgetbridge (nightly) installiert werden kann.
++            applicationIdSuffix ".opel"
++            versionNameSuffix "-opel"
+         }
+ 
+         banglejs {
+diff --git a/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/activities/ControlCenterv2.java b/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/activities/ControlCenterv2.java
+index 3a3dca4e..9d761334 100644
+--- a/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/activities/ControlCenterv2.java
++++ b/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/activities/ControlCenterv2.java
+@@ -169,6 +169,20 @@ public class ControlCenterv2 extends AppCompatActivity
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_main);
+ 
++        // hwgt6: beim Start automatisch das erste bekannte Geraet verbinden,
++        // damit nach Reinstall/Neustart nie eine tote Verbindung bleibt.
++        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
++            try {
++                for (GBDevice d : GBApplication.app().getDeviceManager().getDevices()) {
++                    if (!d.isConnected() && !d.isConnecting()) {
++                        GBApplication.deviceService(d).connect();
++                        break;
++                    }
++                }
++            } catch (Exception ignored) {
++            }
++        }, 2500);
++
+         GBPrefs prefs = GBApplication.getPrefs();
+ 
+         // Determine availability of device with activity tracking functionality
+diff --git a/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huawei/HuaweiSupportProvider.java b/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huawei/HuaweiSupportProvider.java
+index 758bd791..628a22b0 100644
+--- a/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huawei/HuaweiSupportProvider.java
++++ b/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huawei/HuaweiSupportProvider.java
+@@ -1163,6 +1163,11 @@ public class HuaweiSupportProvider {
+                             directionService.register();
+                         }
+ 
++                        // hwgt6: Opel-Dienst fuer die Uhr-App de.saigak.opelwatch
++                        if (nodomain.freeyourgadget.gadgetbridge.service.devices.huawei.p2p.HuaweiP2POpelService.getRegisteredInstance(huaweiP2PManager) == null) {
++                            new nodomain.freeyourgadget.gadgetbridge.service.devices.huawei.p2p.HuaweiP2POpelService(huaweiP2PManager).register();
++                        }
++
+                         if (HuaweiP2PFitnessData.getRegisteredInstance(huaweiP2PManager) == null) {
+                             HuaweiP2PFitnessData p2PFitnessData = new HuaweiP2PFitnessData(huaweiP2PManager);
+                             p2PFitnessData.register();
+@@ -1284,10 +1289,14 @@ public class HuaweiSupportProvider {
+     }
+ 
+     public void onSocketRead(byte[] data) {
++        // hwgt6: Opel-Dienst registrieren, sobald Daten fliessen (Finalize laeuft auf der GT6 nicht zuverlaessig)
++        nodomain.freeyourgadget.gadgetbridge.service.devices.huawei.p2p.HuaweiP2POpelService.onSocketReadHook(huaweiP2PManager, getContext());
+         responseManager.handleData(data);
+     }
+ 
+     public void onSocketRead(byte[] data, int channel) {
++        // hwgt6: siehe oben
++        nodomain.freeyourgadget.gadgetbridge.service.devices.huawei.p2p.HuaweiP2POpelService.onSocketReadHook(huaweiP2PManager, getContext());
+         if (channel != ResponseManager.MAIN_CHANNEL)
+             LOG.debug("Dual channel: received {} bytes on aux socket (channel {}): {}",
+                     data.length, channel, GB.lazyHexdump(data));
+diff --git a/app/src/mainline/res/values/strings.xml b/app/src/mainline/res/values/strings.xml
+index 82d920d6..97171e2e 100644
+--- a/app/src/mainline/res/values/strings.xml
++++ b/app/src/mainline/res/values/strings.xml
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <resources>
+-    <string translatable="false" name="pebble_content_provider">com.getpebble.android.provider</string>
++    <string translatable="false" name="pebble_content_provider">nodomain.freeyourgadget.gadgetbridge.opel.pebbleprovider</string>
+     <string translatable="false" name="app_name">@string/application_name_generic</string>
+     <string translatable="false" name="title_activity_controlcenter">@string/title_activity_controlcenter_generic</string>
+     <string translatable="false" name="about_activity_title">@string/about_activity_title_generic</string>
+diff --git a/gbm/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huawei/p2p/HuaweiP2POpelService.java b/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huawei/p2p/HuaweiP2POpelService.java
+new file mode 100644
+index 00000000..32db741b
+--- /dev/null
++++ b/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/devices/huawei/p2p/HuaweiP2POpelService.java
+@@ -0,0 +1,277 @@
++/*  Copyright (C) 2026  hwgt6
++
++    This file is part of Gadgetbridge (AGPL-3.0).
++
++    Opel-Dienst fuer die Lite-Wearable-App de.saigak.opelwatch auf der
++    Huawei Watch GT6. Die Uhr-App schickt per P2P kleine JSON-Anfragen
++    ({"cmd":"state"|"info"|"command"}); dieser Dienst holt die Antwort bei der
++    Opel-Bridge-App auf demselben Telefon (http://127.0.0.1:8787) und schickt
++    sie zurueck. Kein Huawei Health, kein Wear Engine, keine AGC-Freigabe noetig. */
++package nodomain.freeyourgadget.gadgetbridge.service.devices.huawei.p2p;
++
++import android.content.Context;
++
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import java.io.ByteArrayOutputStream;
++import java.io.File;
++import java.io.FileOutputStream;
++import java.io.InputStream;
++import java.net.HttpURLConnection;
++import java.net.URL;
++import java.nio.charset.StandardCharsets;
++import java.text.SimpleDateFormat;
++import java.util.Date;
++import java.util.Locale;
++
++import nodomain.freeyourgadget.gadgetbridge.service.devices.huawei.HuaweiP2PManager;
++
++public class HuaweiP2POpelService extends HuaweiBaseP2PService {
++    private static final Logger LOG = LoggerFactory.getLogger(HuaweiP2POpelService.class);
++
++    /** Paketname, den die Uhr-App als Gegenstelle erwartet (PHONE_PACKAGE). */
++    public static final String MODULE = "de.saigak.opelbridge";
++    private static final String WATCH_PKG = "de.saigak.opelwatch";
++
++    /*
++     * Fingerprints, wie die Uhr sie selbst in ihren Paketen nennt (verifiziert
++     * 2026-09-22): die Uhr-App identifiziert sich mit
++     * "<bundleName>_<Base64(oeffentlicher Schluessel)>", das Telefon mit dem
++     * festen Wert, den die Uhr-App als PHONE_FINGERPRINT eingetragen hat.
++     * Der Schluessel aendert sich nicht, wenn das Debug-Zertifikat erneuert wird.
++     */
++    private static final String WATCH_FINGERPRINT =
++            "de.saigak.opelwatch_BMxdmgd8C++py2AnLrT5h9vzBAEwCMyCoMVVTG+vpU4uDL2O1bWxYDfUnfqG/rfp5C8U8aFenEJjGWjZ+5JozdA=";
++    private static final String PHONE_FINGERPRINT = "UniteDeviceManagement";
++
++    /**
++     * HTTP-Schnittstelle der Opel-Bridge-App auf demselben Telefon - nur
++     * Rueckfall, falls der ContentProvider nicht erreichbar ist. Das Token
++     * steht in der Opel-Bridge-App unter "Uhr-Token".
++     */
++    private static final String BRIDGE_URL = "http://127.0.0.1:8787";
++    private static final String PROVIDER_AUTHORITY = "de.saigak.opelbridge.watch";
++    private static final String BRIDGE_TOKEN = "HIER_TOKEN_EINTRAGEN";
++
++    public HuaweiP2POpelService(HuaweiP2PManager manager) {
++        super(manager);
++    }
++
++    // ------------------------------------------------------------ Diagnose
++    private void dbg(String msg) {
++        LOG.info("OpelService {}", msg);
++        writeDbg(manager.getSupportProvider().getContext(), msg);
++    }
++
++    /** Kurzes Diagnoselog im internen Verzeichnis (logcat ist auf dem Honor gesperrt). */
++    public static void writeDbg(Context ctx, String msg) {
++        try {
++            File f = new File(ctx.getFilesDir(), "opelprobe.txt");
++            if (f.length() > 200_000) {
++                //noinspection ResultOfMethodCallIgnored
++                f.delete();
++            }
++            String ts = new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
++            try (FileOutputStream out = new FileOutputStream(f, true)) {
++                out.write((ts + "  " + msg + "\n").getBytes(StandardCharsets.UTF_8));
++            }
++        } catch (Exception ignored) {
++        }
++    }
++
++    // ------------------------------------------------------- Registrierung
++    /**
++     * Aus onSocketRead aufgerufen: registriert den Dienst, sobald Daten
++     * fliessen. Die Finalize-Stufe der Init-Queue laeuft auf der GT6 nicht
++     * zuverlaessig durch, deshalb dieser Weg.
++     */
++    public static void onSocketReadHook(HuaweiP2PManager mgr, Context ctx) {
++        try {
++            if (getRegisteredInstance(mgr) != null) return;
++            if (!mgr.getSupportProvider().getDeviceState().supportsP2PService()) return;
++            writeDbg(ctx, "Opel-Dienst registriert");
++            new HuaweiP2POpelService(mgr).register();
++        } catch (Throwable t) {
++            writeDbg(ctx, "Registrierung fehlgeschlagen: " + t);
++        }
++    }
++
++    public static HuaweiP2POpelService getRegisteredInstance(HuaweiP2PManager manager) {
++        return (HuaweiP2POpelService) manager.getRegisteredService(MODULE);
++    }
++
++    @Override
++    public String getModule() {
++        return MODULE;
++    }
++
++    @Override
++    public String getPackage() {
++        return WATCH_PKG;
++    }
++
++    @Override
++    public String getFingerprint() {
++        return WATCH_FINGERPRINT;
++    }
++
++    @Override
++    public String getLocalFingerprint() {
++        return PHONE_FINGERPRINT;
++    }
++
++    @Override
++    public void registered() {
++    }
++
++    @Override
++    public void unregister() {
++    }
++
++    // ------------------------------------------------------------ Anfragen
++    @Override
++    protected int onDataPacket(nodomain.freeyourgadget.gadgetbridge.devices.huawei.packets.P2P.P2PCommand.Response packet) {
++        return 0xca;
++    }
++
++    @Override
++    public void handleData(byte[] data) {
++        final String text = data == null ? "" : new String(data, StandardCharsets.UTF_8);
++        // Netzwerk nicht auf dem Bluetooth-Thread
++        new Thread(() -> answer(text), "opel-p2p").start();
++    }
++
++    private void answer(String request) {
++        String cmd = field(request, "cmd");
++        if (cmd == null) cmd = "state";
++        if ("log".equals(cmd)) {
++            // Diagnose von der Uhr-App: nur mitschreiben, keine Antwort
++            dbg("UHR: " + field(request, "msg"));
++            return;
++        }
++        String reply;
++        switch (cmd) {
++            case "info":
++                reply = fetchInfo();
++                break;
++            case "command":
++                reply = "{\"rt\":\"command\",\"ok\":false,\"msg\":\"Fernbefehle nur ueber die PC-Bridge\"}";
++                break;
++            default:
++                reply = fetchState(request.contains("\"force\":1"));
++                break;
++        }
++        dbg("Uhr '" + cmd + "' -> " + reply.length() + " Byte");
++        sendCommand(reply.getBytes(StandardCharsets.UTF_8), (code, d) -> {
++            if (code != 0xcf) dbg("Antwort nicht zugestellt, Code " + code);
++        });
++    }
++
++    /**
++     * Fragt die Opel-Bridge-App ueber ihren ContentProvider. Android startet die
++     * App dafuer selbst, auch wenn der Akku-Manager sie beendet hat - der
++     * HTTP-Weg geht nur, solange ihr Dienst laeuft.
++     */
++    private String callProvider(String method, boolean force) {
++        try {
++            android.os.Bundle extras = new android.os.Bundle();
++            extras.putBoolean("force", force);
++            android.os.Bundle res = manager.getSupportProvider().getContext().getContentResolver()
++                    .call(android.net.Uri.parse("content://" + PROVIDER_AUTHORITY), method, null, extras);
++            String json = res == null ? null : res.getString("json");
++            return json != null && json.startsWith("{") ? json : null;
++        } catch (Exception e) {
++            dbg("Provider '" + method + "' fehlgeschlagen: " + e);
++            return null;
++        }
++    }
++
++    private String fetchState(boolean force) {
++        String viaProvider = callProvider("watch", force);
++        if (viaProvider != null) return withRt(compact(viaProvider), "state");
++        try {
++            String body = get("/api/v1/watch?t=" + BRIDGE_TOKEN + (force ? "&force=1" : ""));
++            return withRt(compact(body), "state");
++        } catch (Exception e) {
++            // Uhr zeigt dann "--" und den Fehlertext statt einer Zeitueberschreitung
++            return "{\"rt\":\"state\",\"err\":\"Opel Bridge: " + clean(e.getMessage()) + "\"}";
++        }
++    }
++
++    private String fetchInfo() {
++        String viaProvider = callProvider("info", false);
++        if (viaProvider != null) return withRt(viaProvider, "info");
++        try {
++            return withRt(get("/api/v1/info?t=" + BRIDGE_TOKEN), "info");
++        } catch (Exception e) {
++            return "{\"rt\":\"info\",\"ok\":false,\"last_error\":\"Opel Bridge nicht erreichbar\"}";
++        }
++    }
++
++    private static String get(String path) throws Exception {
++        HttpURLConnection c = (HttpURLConnection) new URL(BRIDGE_URL + path).openConnection();
++        c.setConnectTimeout(3000);
++        c.setReadTimeout(20000);   // force=1 fragt das Fahrzeug frisch ab
++        try {
++            int code = c.getResponseCode();
++            InputStream in = code < 400 ? c.getInputStream() : c.getErrorStream();
++            ByteArrayOutputStream buf = new ByteArrayOutputStream();
++            byte[] b = new byte[1024];
++            int n;
++            while (in != null && (n = in.read(b)) > 0) buf.write(b, 0, n);
++            String body = buf.toString("UTF-8").trim();
++            if (code >= 400) throw new Exception("HTTP " + code);
++            return body;
++        } finally {
++            c.disconnect();
++        }
++    }
++
++    /**
++     * Macht die Nutzlast so klein wie moeglich: P2P-Nachrichten an die Uhr
++     * werden ab ca. 200 Byte offenbar abgeschnitten. Leere/null-Felder und
++     * reine Metadaten fallen weg, Koordinaten auf 4 Stellen (~10 m).
++     */
++    private static String compact(String json) {
++        try {
++            org.json.JSONObject in = new org.json.JSONObject(json);
++            org.json.JSONObject out = new org.json.JSONObject();
++            java.util.Iterator<String> keys = in.keys();
++            while (keys.hasNext()) {
++                String k = keys.next();
++                if (k.equals("v") || k.equals("cache_s") || k.equals("src")) continue;
++                Object val = in.get(k);
++                if (val == org.json.JSONObject.NULL) continue;
++                if (val instanceof org.json.JSONArray && ((org.json.JSONArray) val).length() == 0) continue;
++                if ((k.equals("lat") || k.equals("lon")) && val instanceof Number) {
++                    val = Math.round(((Number) val).doubleValue() * 10000.0) / 10000.0;
++                }
++                out.put(k, val);
++            }
++            return out.toString();
++        } catch (Exception e) {
++            return json;
++        }
++    }
++
++    /** Fuegt das Feld "rt" ein, an dem die Uhr die Antwort ihrer Anfrage zuordnet. */
++    private static String withRt(String json, String rt) {
++        if (json.startsWith("{") && json.length() > 1) {
++            return "{\"rt\":\"" + rt + "\"," + json.substring(1);
++        }
++        return "{\"rt\":\"" + rt + "\"}";
++    }
++
++    private static String field(String json, String key) {
++        int i = json.indexOf("\"" + key + "\"");
++        if (i < 0) return null;
++        int q1 = json.indexOf('"', json.indexOf(':', i) + 1);
++        int q2 = json.indexOf('"', q1 + 1);
++        return (q1 > 0 && q2 > q1) ? json.substring(q1 + 1, q2) : null;
++    }
++
++    private static String clean(String s) {
++        return s == null ? "Fehler" : s.replace("\"", "'").replace("\\", "/");
++    }
++}
+diff --git a/gbm/app/src/mainline/AndroidManifest.xml b/app/src/mainline/AndroidManifest.xml
+new file mode 100644
+index 00000000..ea79bab2
+--- /dev/null
++++ b/app/src/mainline/AndroidManifest.xml
+@@ -0,0 +1,11 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- hwgt6: die Opel-Variante holt die Fahrzeugdaten lokal von der Opel-Bridge-App,
++     bevorzugt ueber deren ContentProvider (startet die App bei Bedarf selbst),
++     sonst ueber http://127.0.0.1:8787 - dafuer der Netzwerkzugriff. -->
++<manifest xmlns:android="http://schemas.android.com/apk/res/android">
++    <uses-permission android:name="android.permission.INTERNET" />
++    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
++    <queries>
++        <provider android:authorities="de.saigak.opelbridge.watch" />
++    </queries>
++</manifest>

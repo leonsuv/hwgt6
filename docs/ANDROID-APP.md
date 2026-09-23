@@ -1,149 +1,128 @@
-# Android-App: Bruecke auf dem Telefon
+# Opel Bridge: die Android-App auf dem Telefon
 
-Damit braucht es keinen laufenden PC mehr. Die App meldet sich einmal bei
-MyOpel an, erneuert die Tokens danach selbst und stellt die Fahrzeugdaten
-lokal auf dem Telefon bereit - dort, wo die Uhr sie ohnehin abholt.
-
-## Warum das funktioniert (und warum die Uhr kein WLAN braucht)
-
-Die Watch GT6 hat fuer Apps **kein eigenes IP-Networking**. Ein
-`@system.fetch` in der Uhr-App wird von Huawei Health durch das gekoppelte
-Telefon geleitet und geht erst dort ins Netz. Die Anfrage entsteht also
-effektiv auf dem Telefon:
+Die Opel Bridge meldet sich einmal bei MyOpel an, erneuert die Tokens danach
+selbst und liefert die Fahrzeugdaten an **Gadgetbridge (opel)**, das sie per
+Bluetooth an die Uhr weitergibt. Ein PC wird nicht gebraucht.
 
 ```
-  Uhr-App                Huawei Health                Android-App
-  fetch(127.0.0.1:8787) --Bluetooth--> Telefon  --->  HTTP-Server :8787
-                                                       |
-                                                       v
-                                            api.groupe-psa.com (HTTPS)
+Uhr-App  <--Bluetooth-->  Gadgetbridge (opel)  --ContentProvider-->  Opel Bridge  --HTTPS-->  Opel Connect
 ```
 
-Deshalb genuegt `http://127.0.0.1:8787` in der `config.js` der Uhr: das
-Telefon spricht mit sich selbst. Sollte Huawei Health die Loopback-Adresse
-nicht durchreichen, steht in der App zusaetzlich die WLAN-Adresse des
-Telefons (`http://192.168.x.y:8787`) - der Server lauscht auf allen
-Schnittstellen und beide Wege funktionieren.
+## Was die App kann – und was nicht
 
-## Was die App kann - und was nicht
-
-| | Android-App | Python-Bridge (Provider `opelapi`) |
+| | Opel Bridge | PC-Bridge (Provider `opelapi`) |
 | --- | --- | --- |
-| Ladestand, Reichweite, Tueren, Klima, Position, km | ja | ja |
-| Anmeldung mit Auto-Refresh | ja | ja |
-| Laeuft ohne PC | **ja** | nein |
+| Ladestand, Reichweite, Stecker, Türen, Klima, Position, km | ja | ja |
+| Anmeldung mit automatischer Token-Erneuerung | ja | ja |
+| Läuft ohne PC | **ja** | nein |
 | Fernbefehle (Klima, Verriegeln, Wecken) | nein | ja |
 
-Die Befehle fehlen bewusst: Stellantis verlangt dafuer eine MQTT-Verbindung
-mit einem OTP-Geraeteschluessel (SMS-Code plus App-PIN, streng
-rate-limitiert). Das steckt fertig in der Python-Bibliothek `opelapi`; es
-nach Kotlin zu portieren waere viel Code fuer eine Funktion, die selten
-gebraucht wird. Die Uhr zeigt bei einem Befehlsversuch eine klare Meldung
-statt eines Fehlers.
+Fernbefehle fehlen bewusst: Stellantis verlangt dafür eine MQTT-Verbindung
+mit einem registrierten OTP-Gerät (SMS-Code plus PIN, streng
+rate-limitiert). Jede zusätzliche Registrierung ist ein Risiko für das
+Opel-Konto.
 
 ## Bauen
 
-Voraussetzung: Android Studio (Ladybug oder neuer) mit Android SDK 34.
+Voraussetzung: Android SDK 34 und JDK 17–21. Der Gradle-Wrapper liegt bei.
 
-1. Android Studio &rarr; *Open* &rarr; Ordner `androidapp` waehlen.
-2. Gradle-Sync abwarten (laedt beim ersten Mal AGP und Kotlin-Plugin).
-3. *Run 'app'* mit angestecktem Telefon, oder
-   *Build &rarr; Build Bundle(s)/APK(s) &rarr; Build APK(s)* und die entstandene
-   `app/build/outputs/apk/debug/app-debug.apk` aufs Telefon kopieren.
+```bash
+cd androidapp
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
 
-Die App hat bewusst **keine Fremdbibliotheken**: HTTP laeuft ueber
-`HttpURLConnection`, JSON ueber `org.json` aus dem SDK. Damit gibt es beim
-Bauen wenig, was schiefgehen kann, und die APK bleibt klein.
+Oder in Android Studio: *Open → `androidapp`* → *Run 'app'*.
 
-Sollte Android Studio neuere Plugin-Versionen erzwingen, die Vorschlaege
-einfach uebernehmen - der Code benutzt nichts Versionsabhaengiges.
+Die App hat **keine Fremdbibliotheken**: HTTP über `HttpURLConnection`, JSON
+über `org.json` aus dem SDK.
 
 ## Einrichten
 
-1. **Land pruefen** (Standard `DE`) - es bestimmt `locale` und die
-   Rueckleitungsadresse. Bekannt sind 39 Laender aus `assets/brands.json`.
-2. **Bei Opel anmelden** antippen. Es oeffnet sich die echte Opel-Anmeldeseite
-   im eingebetteten Browser.
-   * **Normalfall:** Nach der Anmeldung leitet die Seite auf
-     `mymopsdk://oauth2redirect/de?code=...`. Die App faengt das ab und loest
-     den Code selbst ein - nichts abtippen, nichts aus den Entwicklertools
-     kopieren.
-   * **Wenn die Zustimmungsseite haengt** (kommt bei Opel oefter vor, die
-     Seite hat einen JavaScript-Fehler): unten auf **Anmeldung abschliessen**
-     tippen. Die App holt den Code dann ueber das Sitzungs-Cookie
-     `iPlanetDirectoryPro`, das nach dem Login bereits im Browser liegt -
-     derselbe Trick wie `--sso-token` in der Python-Bibliothek.
-3. Danach startet die Bruecke von selbst. Die Benachrichtigung zeigt den
-   aktuellen Ladestand.
-4. **Fuer config.js kopieren** antippen und die zwei Zeilen in
-   `watchapp/entry/src/main/js/default/common/config.js` einsetzen:
+1. **Land prüfen** (Standard `DE`). Es bestimmt `locale` und die
+   Rückleitungsadresse; 39 Länder stehen in `assets/brands.json`.
+2. **Bei Opel anmelden** antippen. Es öffnet sich die echte Opel-Anmeldeseite.
+   * **Normalfall:** Nach der Anmeldung leitet Opel auf
+     `mymopsdk://oauth2redirect/de?code=…`. Die App fängt das ab und löst den
+     Code selbst ein – nichts abtippen.
+   * **Wenn die Zustimmungsseite hängt** (bei Opel häufig, die Seite hat einen
+     JavaScript-Fehler): unten **Anmeldung abschließen** antippen. Die App holt
+     den Code dann über das Sitzungs-Cookie `iPlanetDirectoryPro`.
+3. **Akku-Ausnahme zulassen.** Die App fragt beim Öffnen danach. Ohne sie
+   sperrt Android der App im Hintergrund das Netz, und die Uhr bekäme nur
+   alte Daten (*„Unable to resolve host“*). Per adb:
 
-```js
-BASE_URL: 'http://127.0.0.1:8787',
-TOKEN: 'xxxxxxxxxxxxxxxxxxxxxxxx',
-```
+   ```bash
+   adb shell dumpsys deviceidle whitelist +de.saigak.opelbridge
+   ```
 
-5. Uhr-App neu bauen und installieren ([INSTALL-WATCH.md](INSTALL-WATCH.md)).
+4. Fertig. Die App muss danach **nicht geöffnet bleiben**: Gadgetbridge ruft
+   sie über einen ContentProvider auf, und Android startet sie dafür bei
+   Bedarf selbst – auch wenn der Akku-Manager sie vorher beendet hat.
+
+Der Schalter **Brücke starten** ist optional. Er startet zusätzlich einen
+Vordergrunddienst, der alle 5 Minuten abfragt und die HTTP-Schnittstelle zum
+Testen bereitstellt.
+
+## Wie oft wird abgefragt?
+
+* Tippst du auf der Uhr **Aktualisieren**, fragt die Opel Bridge sofort frisch
+  bei Opel an.
+* Sonst beantwortet sie Anfragen aus dem Zwischenspeicher, solange er jünger
+  als das Abfrageintervall ist (Standard 300 s).
+* Häufiger bringt nichts: Ein parkendes Auto meldet ohnehin nur selten neue
+  Werte, und Stellantis verlangt Abstand zwischen den Abfragen. Die Zeit
+  **„Auto meldete vor …“** auf der Uhr ist die letzte Meldung des Autos selbst.
 
 ## Test ohne Uhr
 
-Im Browser des Telefons aufrufen:
+Mit laufender Brücke im Browser des Telefons:
 
 ```
-http://127.0.0.1:8787/api/v1/watch?t=<Token>
+http://127.0.0.1:8787/api/v1/watch?t=<Uhr-Token>
 ```
 
-Kommt JSON zurueck, ist alles richtig. Vom PC aus geht dieselbe Abfrage mit
-der WLAN-Adresse des Telefons.
-
-## Dauerbetrieb
-
-Die Bruecke laeuft als Vordergrunddienst mit fester Benachrichtigung - anders
-erlaubt Android keinen dauerhaft lauschenden Socket. Zwei Dinge sind trotzdem
-noetig:
-
-* **Akkuoptimierung ausschalten**: Einstellungen &rarr; Apps &rarr; Opel Bridge &rarr;
-  Akku &rarr; *Nicht optimiert* / *Uneingeschraenkt*. Huawei-, Samsung- und
-  Xiaomi-Systeme beenden Hintergrunddienste sonst nach einigen Stunden.
-* **Abfrageintervall**: Standard sind 300 Sekunden. Kuerzer bringt nichts -
-  ein parkendes Auto meldet ohnehin nur alle paar Stunden neue Werte, und
-  haeufige Abfragen wecken das Fahrzeugmodem.
+Das Token steht in der App. Kommt JSON zurück, stimmt alles. Vom PC aus geht
+dieselbe Abfrage mit der WLAN-Adresse des Telefons oder per
+`adb forward tcp:8787 tcp:8787`.
 
 ## Sicherheit
 
-* Tokens liegen in den privaten App-Daten (`MODE_PRIVATE`), fuer andere Apps
-  ohne Root nicht lesbar. Sie werden nie protokolliert und nie ueber die
-  Schnittstelle ausgegeben.
-* Der Uhr-Server verlangt bei jeder Anfrage das beim ersten Start gewuerfelte
-  Token (24 Zeichen, zeitkonstanter Vergleich).
-* Der Server lauscht auf allen Schnittstellen. Im heimischen WLAN ist das in
-  Ordnung; in einem oeffentlichen WLAN die Bruecke besser stoppen, denn dort
-  koennte jemand im selben Netz zumindest das Token raten wollen.
-* **Abmelden** loescht Tokens, Fahrzeugdaten und den Zwischenspeicher.
+* Tokens liegen in den privaten App-Daten, sind ohne Root für andere Apps
+  nicht lesbar und werden nie protokolliert oder ausgegeben.
+* Der ContentProvider antwortet nur Gadgetbridge – andere Apps bekommen eine
+  `SecurityException`.
+* Die HTTP-Schnittstelle verlangt das Uhr-Token (24 Zeichen, zeitkonstanter
+  Vergleich). In öffentlichen WLANs die Brücke besser stoppen.
+* **Abmelden** löscht Tokens, Fahrzeugdaten und Zwischenspeicher.
 
 ## Aufbau des Codes
 
 | Datei | Aufgabe |
 | --- | --- |
-| `Brands.kt` | Endpunkte und Laenderdaten aus `assets/brands.json` |
-| `Store.kt` | Tokens, Einstellungen, Zwischenspeicher |
 | `OpelApi.kt` | OAuth-Login, Token-Erneuerung, Fahrzeuge und Status |
-| `Normalize.kt` | Rohantwort &rarr; kompaktes Uhr-JSON (gleiches Schema wie die Bridge) |
-| `WatchServer.kt` | HTTP-Server fuer die Uhr, Token-Pruefung |
-| `BridgeService.kt` | Vordergrunddienst: Abfrageschleife und Server |
+| `Normalize.kt` | Opel-Antwort → kompaktes Uhr-JSON (gleiches Schema wie die PC-Bridge) |
+| `VehicleData.kt` | Abruf und Zwischenspeicher, gemeinsam für Provider und Dienst |
+| `WatchProvider.kt` | ContentProvider für Gadgetbridge (`watch`, `info`) |
+| `BridgeService.kt` | optionaler Vordergrunddienst: Abfrageschleife und HTTP-Server |
+| `WatchServer.kt` | HTTP-Schnittstelle zum Testen, Token-Prüfung |
+| `WearLink.kt` | offizieller Weg über Huawei Health (braucht AGC-Freigabe, sonst „Code 12“) |
 | `LoginActivity.kt` | Anmeldung im WebView, beide Wege |
-| `MainActivity.kt` | Statusanzeige, Start/Stop, Adresse fuer die Uhr |
+| `MainActivity.kt` | Statusanzeige, Start/Stop, Akku-Ausnahme |
+| `Store.kt`, `Brands.kt` | Tokens und Einstellungen, Endpunkte und Länderdaten |
 
-Die Protokoll-Logik in `OpelApi.kt` ist eins zu eins aus der funktionierenden
-Python-Bibliothek `opelapi` uebernommen - inklusive der beiden Eigenheiten,
-die sonst Stunden kosten:
+Die Protokoll-Logik in `OpelApi.kt` stammt aus der funktionierenden
+Python-Bibliothek `opelapi` – inklusive der beiden Eigenheiten, die sonst
+Stunden kosten:
 
 * Die Query-Parameter von `authorize` und `access_token` werden **nicht**
-  prozentkodiert gesendet (`scope=openid%20profile%20email` bleibt so stehen,
-  `redirect_uri` ungekodiert). Die ForgeRock-Endpunkte weisen kodierte Werte ab.
+  prozentkodiert (`scope=openid%20profile%20email` bleibt wörtlich stehen).
 * Der Token-Tausch nutzt HTTP-Basic aus `client_id:client_secret`, die
   Parameter stehen in der URL, der Rumpf bleibt leer.
 
-Dass beide Seiten dasselbe Datenformat liefern, prueft
-`bridge/tests/test_android_consistency.py` automatisch - dafuer muss Android
-nicht gebaut werden.
+Und eine Eigenheit der Statusantwort: `charging.plugged` bleibt oft `true`,
+obwohl `status` schon `Disconnected` meldet. Dann gilt der Status – sonst
+zeigt die Uhr „Angesteckt“, obwohl kein Kabel steckt.
+
+Dass Opel Bridge und PC-Bridge dasselbe Datenformat liefern, prüft
+`bridge/tests/test_android_consistency.py` automatisch.

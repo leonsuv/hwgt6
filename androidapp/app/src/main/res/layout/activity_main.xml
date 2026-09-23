@@ -116,7 +116,46 @@
             android:layout_height="wrap_content"
             android:text="@string/refresh_now" />
 
-        <!-- Adresse fuer die Uhr -->
+        <!-- Uhr (Wear Engine) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="@string/section_wear"
+            android:textColor="#8C93A0"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/wear_hint"
+            android:textColor="#8C93A0"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/watchText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="#1B1E25"
+            android:padding="12dp"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/pairWatchButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/pair_watch" />
+
+        <Button
+            android:id="@+id/reconnectWatchButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/reconnect_watch" />
+
+        <!-- HTTP-Schnittstelle (Browser-Test, PC-Vorschau) -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

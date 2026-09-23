@@ -1,4 +1,8 @@
-/* 466 x 466 px, rundes AMOLED - Schwarz spart Akku, Rand bleibt frei. */
+/* 466 x 466 px, rundes AMOLED - Schwarz spart Akku, Rand bleibt frei.
+   Lite-Layout: Container und Texte wachsen nicht mit dem Inhalt - jedes
+   Element braucht feste Breite und Hoehe, sonst wird es abgeschnitten oder
+   umgebrochen. Mehrere Klassen pro Element und Bindungen in Breiten werden
+   bewusst vermieden. */
 
 .page {
   width: 466px;
@@ -9,13 +13,26 @@
 .swiper {
   width: 466px;
   height: 466px;
-  indicator-color: #3a3a3a;
-  indicator-selected-color: #f5a623;
-  indicator-size: 8px;
-  indicator-bottom: 14px;
 }
 
-/* --------------------------------------------------------- Karte 1 ----- */
+/* ---------------------------------------------------------- Animation -- */
+
+@keyframes pulse {
+  from { opacity: 1; }
+  to { opacity: 0.3; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rise {
+  from { transform: translateY(24px); }
+  to { transform: translateY(0px); }
+}
+
+/* ------------------------------------------------ Karte 1: Uebersicht -- */
 
 .card {
   width: 466px;
@@ -26,14 +43,28 @@
 .ring {
   width: 466px;
   height: 466px;
-  stroke-width: 20px;
+  stroke-width: 16px;
   center-x: 233px;
   center-y: 233px;
-  radius: 203px;
-  start-angle: 210;
-  total-angle: 300;
-  background-color: #262626;
+  radius: 215px;
+  start-angle: 215deg;
+  total-angle: 290deg;
+  background-color: #1c1c1c;
   color: #f5a623;
+}
+
+/* feine Innenlinie als Rahmen */
+.ring-inner {
+  width: 466px;
+  height: 466px;
+  stroke-width: 2px;
+  center-x: 233px;
+  center-y: 233px;
+  radius: 192px;
+  start-angle: 215deg;
+  total-angle: 290deg;
+  background-color: #000000;
+  color: #1f1f1f;
 }
 
 .center {
@@ -42,209 +73,348 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-}
-
-.vehicle {
-  font-size: 28px;
-  color: #9a9a9a;
-  text-align: center;
-  margin-bottom: 4px;
-}
-
-.level-row {
-  flex-direction: row;
-  align-items: flex-end;
-  justify-content: center;
-  height: 118px;
-}
-
-.level {
-  font-size: 118px;
-  color: #f5a623;
-  letter-spacing: -2px;
-}
-
-.percent {
-  font-size: 40px;
-  color: #f5a623;
-  margin-bottom: 18px;
-  margin-left: 4px;
-}
-
-.range {
-  font-size: 40px;
-  color: #ffffff;
-  text-align: center;
-}
-
-.status {
-  font-size: 26px;
-  color: #f5a623;
-  text-align: center;
-  margin-top: 8px;
-}
-
-.secondary {
-  font-size: 24px;
-  color: #9a9a9a;
-  text-align: center;
-  margin-top: 4px;
+  animation-name: rise;
+  animation-duration: 450ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
 }
 
 .age {
-  font-size: 22px;
+  width: 280px;
+  height: 28px;
+  font-size: 20px;
   color: #6e6e6e;
   text-align: center;
-  margin-top: 10px;
+  margin-bottom: 2px;
 }
 
-.age-stale {
-  font-size: 22px;
-  color: #ff9f43;
+.level-row {
+  width: 380px;
+  height: 132px;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.level-num1 {
+  width: 80px;
+  height: 132px;
+  font-size: 124px;
+  text-align: right;
+}
+
+.level-num2 {
+  width: 152px;
+  height: 132px;
+  font-size: 124px;
+  text-align: right;
+}
+
+.level-num3 {
+  width: 224px;
+  height: 132px;
+  font-size: 124px;
+  text-align: right;
+}
+
+.level-unit {
+  width: 48px;
+  height: 56px;
+  font-size: 44px;
+  text-align: left;
+  margin-left: 4px;
+  margin-bottom: 18px;
+}
+
+.range-row {
+  width: 300px;
+  height: 52px;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.range-num1 {
+  width: 30px;
+  height: 52px;
+  font-size: 42px;
+  color: #ffffff;
+  text-align: right;
+}
+
+.range-num2 {
+  width: 56px;
+  height: 52px;
+  font-size: 42px;
+  color: #ffffff;
+  text-align: right;
+}
+
+.range-num3 {
+  width: 82px;
+  height: 52px;
+  font-size: 42px;
+  color: #ffffff;
+  text-align: right;
+}
+
+.range-unit {
+  width: 52px;
+  height: 34px;
+  font-size: 26px;
+  color: #8c8c8c;
+  text-align: left;
+  margin-left: 8px;
+  margin-bottom: 5px;
+}
+
+.plug-icon {
+  width: 44px;
+  height: 44px;
+  margin-top: 16px;
+}
+
+.plug-icon-pulse {
+  width: 44px;
+  height: 44px;
+  margin-top: 16px;
+  animation-name: pulse;
+  animation-duration: 1200ms;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.odo {
+  width: 240px;
+  height: 28px;
+  font-size: 20px;
+  color: #5c5c5c;
   text-align: center;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
-/* ----------------------------------------------------- Karte 2 und 3 --- */
+/* -------------------------------------------------------- Karten 2-4 -- */
 
-.card-list {
+.card-col {
   width: 466px;
   height: 466px;
   background-color: #000000;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding-left: 62px;
-  padding-right: 62px;
 }
 
-.headline {
-  font-size: 30px;
-  color: #f5a623;
+.eyebrow {
+  width: 300px;
+  height: 28px;
+  font-size: 20px;
+  color: #6e6e6e;
   text-align: center;
-  margin-bottom: 14px;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
 }
 
-.row {
-  width: 342px;
-  height: 52px;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom-width: 1px;
-  border-color: #1f1f1f;
+.hero-icon {
+  width: 120px;
+  height: 120px;
+  animation-name: rise;
+  animation-duration: 400ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
 }
 
-.row-label {
-  font-size: 24px;
-  color: #8c8c8c;
+.hero-icon-pulse {
+  width: 120px;
+  height: 120px;
+  animation-name: pulse;
+  animation-duration: 1200ms;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
 }
 
-.row-value {
-  font-size: 24px;
+.hero-text {
+  width: 380px;
+  height: 48px;
+  font-size: 36px;
   color: #ffffff;
-  text-align: right;
-}
-
-.row-value-ok {
-  font-size: 24px;
-  color: #3ddc84;
-  text-align: right;
-}
-
-.row-value-warn {
-  font-size: 24px;
-  color: #ff5252;
-  text-align: right;
-}
-
-.alert {
-  font-size: 22px;
-  color: #ff9f43;
   text-align: center;
   margin-top: 10px;
 }
 
-.hint {
-  font-size: 20px;
-  color: #4d4d4d;
-  text-align: center;
-  margin-top: 12px;
-}
-
-.source {
-  font-size: 20px;
-  color: #4d4d4d;
-  text-align: center;
-  margin-top: 14px;
-}
-
-/* ------------------------------------------------------------ Buttons -- */
-
-.btn {
+.stats {
   width: 330px;
-  height: 62px;
-  background-color: #1c1c1c;
-  border-radius: 31px;
+  height: 90px;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
-  margin-top: 12px;
+  margin-top: 18px;
 }
 
-.btn-primary {
-  width: 330px;
-  height: 62px;
-  background-color: #f5a623;
-  border-radius: 31px;
+.stat {
+  width: 150px;
+  height: 80px;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin-top: 12px;
 }
 
-.btn-text {
-  font-size: 26px;
+.stat3 {
+  width: 104px;
+  height: 80px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.stat-value {
+  width: 150px;
+  height: 42px;
+  font-size: 32px;
   color: #ffffff;
   text-align: center;
 }
 
-.btn-text-dark {
-  font-size: 26px;
-  color: #101010;
+.stat3-value {
+  width: 104px;
+  height: 38px;
+  font-size: 28px;
+  color: #ffffff;
   text-align: center;
 }
 
-/* --------------------------------------------------- Band und Meldung -- */
+.stat-label {
+  width: 150px;
+  height: 26px;
+  font-size: 18px;
+  color: #6e6e6e;
+  text-align: center;
+}
 
-.banner {
-  width: 316px;
-  height: 46px;
-  top: 40px;
-  left: 75px;
-  background-color: #2a1414;
-  border-radius: 23px;
+.stat3-label {
+  width: 104px;
+  height: 26px;
+  font-size: 18px;
+  color: #6e6e6e;
+  text-align: center;
+}
+
+.stat-sep {
+  width: 1px;
+  height: 52px;
+  background-color: #2a2a2a;
+}
+
+.alert {
+  width: 300px;
+  height: 30px;
+  font-size: 20px;
+  color: #ff9f43;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* ------------------------------------------------------ Karte 4: Menue -- */
+
+.big-btn {
+  width: 150px;
+  height: 150px;
+  border-radius: 75px;
+  background-color: #f5a623;
   justify-content: center;
   align-items: center;
 }
 
-.banner-text {
-  font-size: 22px;
-  color: #ff5252;
-  text-align: center;
+.big-btn-icon {
+  width: 72px;
+  height: 72px;
 }
 
+.big-btn-icon-spin {
+  width: 72px;
+  height: 72px;
+  animation-name: spin;
+  animation-duration: 900ms;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.big-btn-label {
+  width: 260px;
+  height: 32px;
+  font-size: 24px;
+  color: #ffffff;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.small-btns {
+  width: 220px;
+  height: 90px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.small-btn {
+  width: 84px;
+  height: 84px;
+  border-radius: 42px;
+  background-color: #1c1c1c;
+  justify-content: center;
+  align-items: center;
+}
+
+.small-btn-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.foot {
+  width: 280px;
+  height: 28px;
+  font-size: 18px;
+  color: #6e6e6e;
+  text-align: center;
+  margin-top: 14px;
+}
+
+/* -------------------------------------------------------- Seitenpunkte -- */
+
+.dots {
+  width: 80px;
+  height: 10px;
+  top: 430px;
+  left: 193px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: #3a3a3a;
+}
+
+/* ---------------------------------------------------------- Meldung -- */
+
 .toast {
-  width: 380px;
-  height: 70px;
-  top: 340px;
-  left: 43px;
+  width: 340px;
+  height: 64px;
+  top: 360px;
+  left: 63px;
   background-color: #1f1f1f;
-  border-radius: 35px;
+  border-radius: 32px;
   justify-content: center;
   align-items: center;
 }
 
 .toast-text {
-  font-size: 24px;
+  width: 320px;
+  height: 30px;
+  font-size: 22px;
   color: #ffffff;
   text-align: center;
 }

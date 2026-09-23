@@ -19,8 +19,10 @@ nachgezogen - die Uhr kennt ohnehin nur das normalisierte Format.
 | C. Bridge + psa_car_controller | ja | ja | mittel |
 | D. Bridge + `stellantis` direkt | ja | nein | hoch |
 
-A und B lassen sich kombinieren: dieselbe Uhr-App spricht mit beiden, nur die
-`BASE_URL` in `config.js` unterscheidet sich.
+**Auf die Uhr kommen die Daten nur über Weg A** (Opel Bridge + Gadgetbridge,
+siehe [GADGETBRIDGE.md](GADGETBRIDGE.md)) – die Uhr hat keinen Netzzugang und
+erreicht keinen PC. Die Wege B–D speisen die PC-Bridge: Browser-Vorschau,
+Tests und Fernbefehle. Beide liefern dasselbe Datenformat.
 
 ---
 
@@ -29,9 +31,8 @@ A und B lassen sich kombinieren: dieselbe Uhr-App spricht mit beiden, nur die
 Kein Server noetig, einmal anmelden, Tokens erneuern sich selbst. Der
 komplette Ablauf steht in [ANDROID-APP.md](ANDROID-APP.md).
 
-Kurz: `androidapp` in Android Studio oeffnen, bauen, installieren, in der App
-bei Opel anmelden, "Fuer config.js kopieren" antippen, die zwei Zeilen in die
-Uhr-App uebernehmen. Fertig.
+Kurz: `androidapp` bauen und installieren, in der App bei Opel anmelden,
+Akku-Ausnahme zulassen. Gadgetbridge (opel) holt die Daten dann selbst ab.
 
 ---
 

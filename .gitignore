@@ -30,3 +30,19 @@ androidapp/.idea/
 *.aab
 *.jks
 *.keystore
+
+.kilo
+# Signaturmaterial der Watch-App (privater Schluessel!)
+watchapp/signing/
+
+# AGC-App-ID der Android-App (Wear Engine)
+androidapp/agc-appid.txt
+
+# Fertige Pakete (APKs, HAP, .fw) - werden lokal gebaut
+dist/
+
+# Geraetekennung der eigenen Uhr
+watchapp/udid.txt
+
+# Gadgetbridge-Klon von gadgetbridge/build.sh
+gadgetbridge/src/

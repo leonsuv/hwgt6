@@ -188,7 +188,9 @@ def normalize_status(
             level=pick(electric, "level"),
             range_km=pick(electric, "autonomy", "range"),
             charging=status in ("inprogress", "in_progress", "charging"),
-            plugged=bool(pick(charging, "plugged", default=status not in ("", "disconnected"))),
+            # "plugged" bleibt oft true, obwohl status "Disconnected" meldet
+            plugged=bool(pick(charging, "plugged", default=status not in ("", "disconnected")))
+            and status != "disconnected",
             charge_kw=_charge_power_kw(raw),
             charge_rate_kmh=rate,
             charge_remaining_min=parse_duration_min(

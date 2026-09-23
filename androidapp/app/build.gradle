@@ -13,6 +13,11 @@ android {
         targetSdk 34
         versionCode 1
         versionName '1.0.0'
+
+        // AGC-App-ID fuer Wear Engine (androidapp/agc-appid.txt, gitignored).
+        // Ohne Datei bleibt "0" stehen; Wear Engine lehnt dann ab.
+        def agcIdFile = rootProject.file('agc-appid.txt')
+        manifestPlaceholders = [agcAppId: agcIdFile.exists() ? agcIdFile.text.trim() : '0']
     }
 
     buildTypes {
@@ -30,11 +35,46 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
+
+    buildFeatures {
+        buildConfig true
+    }
 }
+
+// Das Uhr-Token aus watchapp/.../config.js in die App einbacken, damit beide
+// Seiten ohne Abtippen zusammenpassen. Fehlt die Datei oder steht noch der
+// Platzhalter drin, wuerfelt die App beim ersten Start wie bisher.
+def watchConfig = rootProject.file('../watchapp/entry/src/main/js/default/common/config.js')
+def watchToken = ''
+if (watchConfig.exists()) {
+    def m = (watchConfig.text =~ /TOKEN:\s*'([^']*)'/)
+    if (m.find() && m.group(1) != 'HIER_TOKEN_EINTRAGEN') watchToken = m.group(1)
+}
+android.defaultConfig.buildConfigField 'String', 'DEFAULT_WATCH_TOKEN', "\"${watchToken}\""
+
+// Fingerabdruck der Uhr-App fuer Wear Engine: "<bundleName>_<Base64(SHA-256(Zertifikat))>".
+// Wird aus dem Signaturzertifikat der Uhr-App berechnet (watchapp/signing/*.cer,
+// letztes Zertifikat der Kette = App-Zertifikat). Aendert sich mit jedem neuen
+// Debug-Zertifikat - dann APK neu bauen.
+def watchCert = rootProject.file('../watchapp/signing/opelwatch-debug.cer')
+def watchConfig2 = rootProject.file('../watchapp/entry/src/main/config.json')
+def watchFingerprint = ''
+if (watchCert.exists() && watchConfig2.exists()) {
+    def bundle = (watchConfig2.text =~ /"bundleName":\s*"([^"]+)"/)[0][1]
+    def pems = watchCert.text.split('-----END CERTIFICATE-----').findAll { it.contains('BEGIN CERTIFICATE') }
+    def leaf = pems[-1].split('-----BEGIN CERTIFICATE-----')[1].replaceAll(/\s/, '')
+    def der = leaf.decodeBase64()
+    def digest = java.security.MessageDigest.getInstance('SHA-256').digest(der)
+    watchFingerprint = bundle + '_' + digest.encodeBase64().toString()
+}
+android.defaultConfig.buildConfigField 'String', 'WATCH_FINGERPRINT', "\"${watchFingerprint}\""
+android.defaultConfig.buildConfigField 'String', 'WATCH_BUNDLE', "\"${watchFingerprint ? watchFingerprint.split('_')[0] : ''}\""
 
 dependencies {
     // Bewusst nur das Noetigste: kein OkHttp, kein Retrofit, kein Compose.
     // HTTP laeuft ueber HttpURLConnection, JSON ueber org.json aus dem SDK.
     implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'androidx.activity:activity:1.9.3'
+    // Wear Engine: Nachrichtenkanal zur Uhr-App (Bluetooth via Huawei Health)
+    implementation 'com.huawei.hms:wearengine:5.0.3.305'
 }

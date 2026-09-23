@@ -117,7 +117,7 @@ def test_offene_tueren_und_privatmodus():
     assert state.doors.locked is False
     assert sorted(state.doors.open) == ["fl", "trunk"]
     assert "Privatmodus aktiv - keine Position" in state.alerts
-    assert "Fahrzeug faehrt" in state.alerts
+    assert "Fahrzeug fährt" in state.alerts
 
 
 def test_hybrid_beide_energien():

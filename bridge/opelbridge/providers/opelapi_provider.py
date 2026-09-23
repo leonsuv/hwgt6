@@ -147,7 +147,8 @@ class OpelApiProvider(Provider):
             level=battery if battery is not None else fuel,
             range_km=status.range_km if battery is not None else status.fuel_range_km,
             charging=bool(status.charging),
-            plugged=bool(status.plugged),
+            # "plugged" bleibt oft true, obwohl der Status "Disconnected" meldet
+            plugged=bool(status.plugged) and (status.charging_status or "").lower() != "disconnected",
             charge_rate_kmh=status.charging_rate_kmh,
             charge_remaining_min=remaining_min,
             charge_mode=(status.charging_mode or "").lower() or None,
@@ -190,7 +191,7 @@ class OpelApiProvider(Provider):
         if status.privacy_mode:
             alerts.append("Privatmodus aktiv - keine Position")
         if status.moving:
-            alerts.append("Fahrzeug faehrt")
+            alerts.append("Fahrzeug fährt")
         health = status.battery_health_capacity
         if health is not None and health < 80:
             alerts.append("Batteriegesundheit %d %%" % round(health))

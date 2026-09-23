@@ -98,6 +98,23 @@ class MainActivity : ComponentActivity() {
 
         findViewById<Button>(R.id.copyButton).setOnClickListener { copyConfig() }
 
+        findViewById<Button>(R.id.pairWatchButton).setOnClickListener {
+            if (!BridgeService.running) {
+                toast("Zuerst Bruecke starten")
+            } else {
+                BridgeService.pairWatch(this)
+                handler.postDelayed({ render() }, 1500)
+            }
+        }
+        findViewById<Button>(R.id.reconnectWatchButton).setOnClickListener {
+            if (!BridgeService.running) {
+                toast("Zuerst Bruecke starten")
+            } else {
+                BridgeService.reconnectWatch(this)
+                handler.postDelayed({ render() }, 1500)
+            }
+        }
+
         findViewById<Button>(R.id.logoutButton).setOnClickListener {
             BridgeService.stop(this)
             store.logout()
@@ -114,6 +131,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        askBatteryExemption()
         handler.post(ticker)
     }
 
@@ -147,6 +165,8 @@ class MainActivity : ComponentActivity() {
             if (lan != null) append("\noder  http://").append(lan).append(":").append(port)
         }
         tokenText.text = store.watchToken
+        findViewById<TextView>(R.id.watchText).text =
+            if (running) "Uhr: ${BridgeService.watchState}" else "Uhr: Bruecke gestoppt"
 
         val error = store.lastError
         errorText.text = error ?: ""
@@ -189,6 +209,25 @@ class MainActivity : ComponentActivity() {
                     this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1
                 )
             }
+        }
+    }
+
+    /**
+     * Ohne Akku-Ausnahme sperrt Android der App im Hintergrund das Netz
+     * (netpolicy blocked=APP_BACKGROUND, verifiziert 2026-09-22) - dann kann
+     * Gadgetbridge ueber den WatchProvider keine frischen Daten holen.
+     */
+    @android.annotation.SuppressLint("BatteryLife")
+    private fun askBatteryExemption() {
+        val power = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        if (power.isIgnoringBatteryOptimizations(packageName)) return
+        try {
+            startActivity(
+                Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                    .setData(android.net.Uri.parse("package:$packageName"))
+            )
+        } catch (e: Exception) {
+            toast("Bitte Akku-Optimierung fuer Opel Bridge abschalten")
         }
     }
 

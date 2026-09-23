@@ -1,81 +1,103 @@
 <stack class="page">
 
-  <!-- Karten: 1 Energie  2 Status  3 Aktionen -->
-  <swiper class="swiper" index="{{page}}" loop="false" indicator="true" onchange="onSwipe">
+  <!-- Karten: 1 Uebersicht  2 Laden  3 Fahrzeug  4 Menue -->
+  <swiper class="swiper" index="{{page}}" loop="false" onchange="onSwipe">
 
-    <!-- ============================ Karte 1: Energie ==================== -->
+    <!-- ============================ Karte 1: Uebersicht ================= -->
     <stack class="card">
-      <progress class="ring" type="arc" percent="{{view.ring}}"
-                style="color: {{view.ringColor}};"></progress>
+      <progress class="ring-inner" type="arc" percent="100"></progress>
+      <progress class="ring" type="arc" percent="{{ringNow}}"
+                style="color: {{view.accent}};"></progress>
 
       <div class="center">
-        <text class="vehicle">{{view.name}}</text>
-
+        <text class="age" style="color: {{ageColor}};">{{ageLine}}</text>
         <div class="level-row">
-          <text class="level" style="color: {{view.accent}};">{{view.levelText}}</text>
-          <text class="percent" style="color: {{view.accent}};">%</text>
+          <text class="level-num1" style="color: {{view.accent}};" if="{{levelD1}}">{{levelNow}}</text>
+          <text class="level-num2" style="color: {{view.accent}};" if="{{levelD2}}">{{levelNow}}</text>
+          <text class="level-num3" style="color: {{view.accent}};" if="{{levelD3}}">{{levelNow}}</text>
+          <text class="level-unit" style="color: {{view.accent}};" if="{{hasLevel}}">%</text>
         </div>
-
-        <text class="range">{{view.rangeText}}</text>
-        <text class="status" style="color: {{view.accent}};">{{view.statusFull}}</text>
-        <text class="secondary" if="{{view.hasSecondary}}">{{view.secondaryText}}</text>
-        <text class="{{ageClass}}">{{view.ageText}}</text>
+        <div class="range-row">
+          <text class="range-num1" if="{{rangeD1}}">{{rangeNum}}</text>
+          <text class="range-num2" if="{{rangeD2}}">{{rangeNum}}</text>
+          <text class="range-num3" if="{{rangeD3}}">{{rangeNum}}</text>
+          <text class="range-unit" if="{{hasRange}}">{{rangeUnit}}</text>
+        </div>
+        <image class="plug-icon-pulse" src="{{plugIconS}}" if="{{isCharging}}"></image>
+        <image class="plug-icon" src="{{plugIconS}}" if="{{notCharging}}"></image>
+        <text class="odo">{{odoLine}}</text>
       </div>
     </stack>
 
-    <!-- ============================ Karte 2: Status ===================== -->
-    <div class="card-list">
-      <text class="headline">Status</text>
-
-      <div class="row" onclick="goDetail">
-        <text class="row-label">Verriegelung</text>
-        <text class="{{lockClass}}">{{view.lockText}}</text>
+    <!-- ============================ Karte 2: Laden ====================== -->
+    <div class="card-col">
+      <text class="eyebrow">{{L.charge}}</text>
+      <image class="hero-icon-pulse" src="{{plugIconL}}" if="{{isCharging}}"></image>
+      <image class="hero-icon" src="{{plugIconL}}" if="{{notCharging}}"></image>
+      <text class="hero-text" style="color: {{plugColor}};">{{chargeHero}}</text>
+      <div class="stats">
+        <div class="stat">
+          <text class="stat-value">{{statA}}</text>
+          <text class="stat-label">{{statALabel}}</text>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat">
+          <text class="stat-value">{{statB}}</text>
+          <text class="stat-label">{{statBLabel}}</text>
+        </div>
       </div>
-      <div class="row" onclick="goDetail">
-        <text class="row-label">Tueren</text>
-        <text class="{{doorClass}}">{{view.doorsText}}</text>
-      </div>
-      <div class="row" onclick="goDetail">
-        <text class="row-label">Klima</text>
-        <text class="row-value">{{view.climateText}}</text>
-      </div>
-      <div class="row" onclick="goDetail">
-        <text class="row-label">Innen / Aussen</text>
-        <text class="row-value">{{tempsText}}</text>
-      </div>
-      <div class="row" onclick="goDetail">
-        <text class="row-label">Kilometer</text>
-        <text class="row-value">{{view.odoText}}</text>
-      </div>
-
-      <text class="alert" if="{{view.hasAlerts}}">{{alertText}}</text>
-      <text class="hint">tippen fuer Details</text>
     </div>
 
-    <!-- ============================ Karte 3: Aktionen =================== -->
-    <div class="card-list">
-      <text class="headline">Aktionen</text>
+    <!-- ============================ Karte 3: Fahrzeug =================== -->
+    <div class="card-col" onclick="goDetail">
+      <text class="eyebrow">{{nameUpper}}</text>
+      <image class="hero-icon" src="{{lockIcon}}"></image>
+      <text class="hero-text" style="color: {{lockColor}};">{{lockText}}</text>
+      <div class="stats">
+        <div class="stat3">
+          <text class="stat3-value">{{outsideShort}}</text>
+          <text class="stat3-label">{{L.outside}}</text>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat3">
+          <text class="stat3-value" style="color: {{doorColor}};">{{doorsShort}}</text>
+          <text class="stat3-label">{{L.doors}}</text>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat3">
+          <text class="stat3-value">{{climateRow}}</text>
+          <text class="stat3-label">{{L.climate}}</text>
+        </div>
+      </div>
+      <text class="alert" if="{{view.hasAlerts}}">{{alertText}}</text>
+    </div>
 
-      <div class="btn-primary" onclick="forceRefresh">
-        <text class="btn-text-dark">Jetzt aktualisieren</text>
+    <!-- ============================ Karte 4: Menue ====================== -->
+    <div class="card-col">
+      <div class="big-btn" onclick="forceRefresh">
+        <image class="big-btn-icon-spin" src="/common/images/refresh.png" if="{{busy}}"></image>
+        <image class="big-btn-icon" src="/common/images/refresh.png" if="{{notBusy}}"></image>
       </div>
-      <div class="btn" onclick="precondition" if="{{showActions}}">
-        <text class="btn-text">{{climateBtnText}}</text>
+      <text class="big-btn-label">{{L.refresh}}</text>
+      <div class="small-btns">
+        <div class="small-btn" onclick="goDetail">
+          <image class="small-btn-icon" src="/common/images/info.png"></image>
+        </div>
+        <div class="small-btn" onclick="goSettings">
+          <image class="small-btn-icon" src="/common/images/gear.png"></image>
+        </div>
       </div>
-      <div class="btn" onclick="wakeup" if="{{showActions}}">
-        <text class="btn-text">Fahrzeug wecken</text>
-      </div>
-      <div class="btn" onclick="goSettings">
-        <text class="btn-text">Einstellungen</text>
-      </div>
-      <text class="source">{{sourceText}}</text>
+      <text class="foot" style="color: {{ageColor}};">{{ageFoot}}</text>
     </div>
 
   </swiper>
 
-  <!-- Statusband oben: Offline / Fehler / laeuft -->
-  <div class="banner" if="{{bannerText}}">
-    <text class="banner-text">{{bannerText}}</text>
+  <!-- Seitenpunkte: im Spalt unten zwischen den Ringenden -->
+  <div class="dots">
+    <div class="dot" style="background-color: {{dot0}};"></div>
+    <div class="dot" style="background-color: {{dot1}};"></div>
+    <div class="dot" style="background-color: {{dot2}};"></div>
+    <div class="dot" style="background-color: {{dot3}};"></div>
   </div>
 
   <!-- Kurzmeldung nach Aktionen -->

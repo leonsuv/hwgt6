@@ -1,12 +1,30 @@
 /*
- * Netzwerk- und Cache-Schicht der Uhr-App.
+ * Daten- und Cache-Schicht der Uhr-App.
+ *
+ * Die Daten kommen nicht per HTTP, sondern per Wear Engine von der
+ * Handy-App (siehe p2p.js). Anfrage und Antwort sind kleine JSON-Texte:
+ *   Uhr  -> Handy: {"cmd":"state","force":1}  |  {"cmd":"info"}
+ *                  {"cmd":"command","name":"wakeup","params":{...}}
+ *   Handy -> Uhr : dieselbe Nutzlast wie GET /api/v1/watch, ergaenzt um
+ *                  "rt":"state"|"info"|"command"|"error"
  *
  * Bewusst in ES5 geschrieben (var / function / keine Promises), weil die
  * JS-Engine der Lite-Wearable-Laufzeit nur einen kleinen ES6-Teil kann.
  */
-import fetch from '@system.fetch';
 import storage from '@system.storage';
 import CONFIG from './config.js';
+import p2p from './p2p.js';
+import util from './util.js';
+
+/* Diagnose ans Handy schicken (Gadgetbridge schreibt sie ins Log). */
+function remoteLog(msg) {
+  try {
+    p2p.send(JSON.stringify({ cmd: 'log', msg: String(msg).substring(0, 150) }), function () {});
+  } catch (e) {
+    /* ignorieren */
+  }
+}
+util.setReporter(remoteLog);
 
 var CACHE_KEY = 'opel_state_v1';
 var PREF_KEY = 'opel_prefs_v1';
@@ -28,15 +46,6 @@ function clone(obj) {
   return out;
 }
 
-function url(path, extra) {
-  var full = CONFIG.BASE_URL + path;
-  full += (path.indexOf('?') >= 0 ? '&' : '?') + 't=' + CONFIG.TOKEN;
-  if (extra) {
-    full += extra;
-  }
-  return full;
-}
-
 function parse(text) {
   if (!text) {
     return null;
@@ -49,6 +58,79 @@ function parse(text) {
   } catch (e) {
     return null;
   }
+}
+
+/* ------------------------------------------------------- Wear Engine */
+
+var pending = {};       /* rt -> { done: function(reply), timer: id } */
+var linked = false;
+var pushCb = null;      /* Empfaengt jede vom Handy gepushte Statusnachricht. */
+
+/* Die Handy-App darf Daten auch unaufgefordert schicken (Push-Modell).
+   onPush(cb) laesst die Uhr solche Nachrichten sofort anzeigen. */
+function onPush(cb) {
+  pushCb = cb;
+  ensureLink();
+}
+
+function ensureLink() {
+  if (linked) {
+    return;
+  }
+  linked = true;
+  p2p.init(CONFIG.PHONE_PACKAGE, CONFIG.PHONE_FINGERPRINT);
+  p2p.subscribe(function (text) {
+    var reply = parse(text);
+    if (!reply) {
+      remoteLog('unlesbar typ=' + (typeof text) + ' len=' + (text ? String(text).length : 0) +
+        ' anfang=' + String(text).substring(0, 60));
+      return;
+    }
+    var rt = reply.rt || 'state';
+    var waiting = pending[rt];
+    if (waiting) {
+      delete pending[rt];
+      clearTimeout(waiting.timer);
+      waiting.done(reply);
+    }
+    /* Jede Statusnachricht (auch unaufgefordert) an die Anzeige geben. */
+    if (rt === 'state' && pushCb) {
+      reply.recv = Date.now();
+      writeCache(reply);
+      pushCb(reply);
+    }
+  });
+}
+
+/*
+ * Anfrage an die Handy-App. done(reply) mit reply.rt === 'error' bei
+ * Fehler (reply.msg enthaelt den Text).
+ */
+function request(cmd, extra, timeoutMs, done) {
+  ensureLink();
+  var body = { cmd: cmd };
+  for (var key in extra) {
+    if (Object.prototype.hasOwnProperty.call(extra, key)) {
+      body[key] = extra[key];
+    }
+  }
+  if (pending[cmd]) {
+    clearTimeout(pending[cmd].timer);
+  }
+  pending[cmd] = {
+    done: done,
+    timer: setTimeout(function () {
+      delete pending[cmd];
+      done({ rt: 'error', msg: 'Keine Antwort vom Handy' });
+    }, timeoutMs)
+  };
+  p2p.send(JSON.stringify(body), function (ok, detail) {
+    if (!ok && pending[cmd]) {
+      clearTimeout(pending[cmd].timer);
+      delete pending[cmd];
+      done({ rt: 'error', msg: detail || 'Handy nicht erreichbar' });
+    }
+  });
 }
 
 /* ------------------------------------------------------------ Praeferenzen */
@@ -136,9 +218,8 @@ function writeCache(data) {
 
 function configured() {
   return (
-    CONFIG.BASE_URL.indexOf('http') === 0 &&
-    CONFIG.TOKEN !== 'HIER_TOKEN_EINTRAGEN' &&
-    CONFIG.TOKEN.length > 0
+    typeof CONFIG.PHONE_PACKAGE === 'string' && CONFIG.PHONE_PACKAGE.length > 0 &&
+    typeof CONFIG.PHONE_FINGERPRINT === 'string' && CONFIG.PHONE_FINGERPRINT.length > 0
   );
 }
 
@@ -154,60 +235,20 @@ function getState(opts) {
   var onFail = options.fail || function () {};
 
   if (!configured()) {
-    onFail('Bridge nicht konfiguriert - common/config.js anpassen', null);
+    onFail('Handy-App nicht konfiguriert - common/config.js anpassen', null);
     return;
   }
 
-  var done = false;
-  var timer = setTimeout(function () {
-    if (!done) {
-      done = true;
+  request('state', { force: options.force ? 1 : 0 }, CONFIG.TIMEOUT_MS, function (reply) {
+    if (reply.rt === 'error') {
       readCache(function (cached) {
-        onFail('Zeitueberschreitung', cached);
+        onFail(reply.msg || 'Handy nicht erreichbar', cached);
       });
+      return;
     }
-  }, CONFIG.TIMEOUT_MS);
-
-  fetch.fetch({
-    url: url('/api/v1/watch', options.force ? '&force=1' : ''),
-    method: 'GET',
-    responseType: 'text',
-    header: {
-      'X-Token': CONFIG.TOKEN,
-      Accept: 'application/json'
-    },
-    success: function (response) {
-      if (done) {
-        return;
-      }
-      done = true;
-      clearTimeout(timer);
-      var code = response.code || 200;
-      var data = parse(response.data);
-      if (code === 401) {
-        onFail('Token abgelehnt (401)', null);
-        return;
-      }
-      if (code >= 400 || !data) {
-        readCache(function (cached) {
-          onFail('Bridge-Fehler ' + code, cached);
-        });
-        return;
-      }
-      data.recv = Date.now();
-      writeCache(data);
-      onSuccess(data, false);
-    },
-    fail: function (data, code) {
-      if (done) {
-        return;
-      }
-      done = true;
-      clearTimeout(timer);
-      readCache(function (cached) {
-        onFail('Kein Kontakt zur Bridge (' + (code || '?') + ')', cached);
-      });
-    }
+    reply.recv = Date.now();
+    writeCache(reply);
+    onSuccess(reply, false);
   });
 }
 
@@ -218,52 +259,16 @@ function getState(opts) {
 function command(name, params, done) {
   var callback = done || function () {};
   if (!configured()) {
-    callback(false, 'Bridge nicht konfiguriert');
+    callback(false, 'Handy-App nicht konfiguriert');
     return;
   }
-  var extra = '';
-  if (params) {
-    for (var key in params) {
-      if (Object.prototype.hasOwnProperty.call(params, key)) {
-        extra += '&' + key + '=' + encodeURIComponent(params[key]);
-      }
+  request('command', { name: name, params: params || {} }, CONFIG.TIMEOUT_MS + 8000, function (reply) {
+    if (reply.rt === 'error') {
+      callback(false, reply.msg || 'Fehlgeschlagen');
+      return;
     }
-  }
-  var finished = false;
-  var timer = setTimeout(function () {
-    if (!finished) {
-      finished = true;
-      callback(false, 'Zeitueberschreitung');
-    }
-  }, CONFIG.TIMEOUT_MS + 8000);
-
-  fetch.fetch({
-    url: url('/api/v1/command/' + name, extra),
-    method: 'POST',
-    responseType: 'text',
-    header: {
-      'X-Token': CONFIG.TOKEN,
-      'Content-Type': 'application/json'
-    },
-    data: '{}',
-    success: function (response) {
-      if (finished) {
-        return;
-      }
-      finished = true;
-      clearTimeout(timer);
-      var body = parse(response.data) || {};
-      var ok = (response.code || 200) < 400 && body.ok !== false;
-      callback(ok, body.message || body.error || (ok ? 'Gesendet' : 'Fehlgeschlagen'));
-    },
-    fail: function (data, code) {
-      if (finished) {
-        return;
-      }
-      finished = true;
-      clearTimeout(timer);
-      callback(false, 'Netzwerkfehler ' + (code || '?'));
-    }
+    var ok = reply.ok !== false;
+    callback(ok, reply.msg || reply.message || reply.error || (ok ? 'Gesendet' : 'Fehlgeschlagen'));
   });
 }
 
@@ -273,31 +278,22 @@ function ping(done) {
     done(false, 'config.js unvollstaendig');
     return;
   }
-  fetch.fetch({
-    url: url('/api/v1/info'),
-    method: 'GET',
-    responseType: 'text',
-    header: { 'X-Token': CONFIG.TOKEN },
-    success: function (response) {
-      var body = parse(response.data) || {};
-      if ((response.code || 200) === 401) {
-        done(false, 'Token falsch');
-        return;
-      }
-      if (body.config) {
-        done(true, 'OK - ' + body.config.provider);
-      } else {
-        done(false, 'Antwort ungueltig');
-      }
-    },
-    fail: function (data, code) {
-      done(false, 'Offline (' + (code || '?') + ')');
+  request('info', {}, CONFIG.TIMEOUT_MS, function (reply) {
+    if (reply.rt === 'error') {
+      done(false, reply.msg || 'Offline');
+      return;
     }
+    if (reply.ok === false && reply.last_error) {
+      done(false, String(reply.last_error).substring(0, 40));
+      return;
+    }
+    done(true, 'OK - ' + (reply.vehicle || reply.provider || 'Handy'));
   });
 }
 
 export default {
   getState: getState,
+  onPush: onPush,
   command: command,
   ping: ping,
   readCache: readCache,
