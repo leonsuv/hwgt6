@@ -5,10 +5,10 @@
 **Ladestand, Reichweite, Stecker, Schloss und Kilometerstand deines Opel direkt am Handgelenk.**
 Ohne Huawei Health, ohne AppGallery-Freigabe, ohne Identitätsprüfung.
 
-![Karten der Uhr-App](docs/screenshots/01_uebersicht.png)
-![Laden](docs/screenshots/03_laden.png)
-![Fahrzeug](docs/screenshots/04_fahrzeug.png)
-![Menü](docs/screenshots/06_menue.png)
+![Karten der Uhr-App](docs/screenshots/01_uebersicht_v2.png)
+![Laden](docs/screenshots/03_laden_v2.png)
+![Fahrzeug](docs/screenshots/04_fahrzeug_v2.png)
+![Menü](docs/screenshots/06_menue_v2.png)
 
 </div>
 
@@ -32,7 +32,7 @@ pulsierendem Ladesymbol:
 
 | Lädt | Tür offen | Handy nicht erreichbar |
 | --- | --- | --- |
-| ![Lädt](docs/screenshots/02_uebersicht_laedt.png) | ![Tür offen](docs/screenshots/05_tuer_offen.png) | ![Offline](docs/screenshots/07_offline.png) |
+| ![Lädt](docs/screenshots/02_uebersicht_laedt_v2.png) | ![Tür offen](docs/screenshots/05_tuer_offen_v2.png) | ![Offline](docs/screenshots/07_offline_v2.png) |
 
 </details>
 
